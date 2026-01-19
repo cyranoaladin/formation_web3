@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat > docker-compose.yml <<'YML'
+services:
+  mongo:
+    image: mongo:7
+    container_name: rbk-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+      - ./:/repo:ro
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: rbk-api:local
+    container_name: rbk-api
+    depends_on:
+      mongo:
+        condition: service_started
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: rbk_labs
+      RBK_ENV: dev
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    image: rbk-worker:local
+    container_name: rbk-worker
+    depends_on:
+      mongo:
+        condition: service_started
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: rbk_labs
+      PYTHONUNBUFFERED: "1"
+      WORKER_POLL_INTERVAL: "5"
+      WORKER_STALE_MIN: "10"
+      RBK_ENV: dev
+      RBK_API_BASE_URL: http://api:8000
+      WORKSPACE_ROOT: /tmp/rbk_workspaces
+    restart: unless-stopped
+
+  ui:
+    image: node:22
+    container_name: rbk-ui
+    working_dir: /ui
+    volumes:
+      - ./ui:/ui
+      - ui_node_modules:/ui/node_modules
+    command: bash -lc "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+YML
+
+cat >> docker-compose.yml <<'YML'
+
+volumes:
+  mongo_data:
+  ui_node_modules:
+YML
+
+docker compose config >/dev/null && echo "OK: compose config valid"
+
+docker compose up -d --force-recreate --build
+docker compose ps -a
