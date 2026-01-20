@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rbk://schemas/canonical/labs_index.schema.json",
+  "title": "RBK Labs Index (Canonical)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["labs"],
+  "properties": {
+    "labs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["lab_id", "title", "version", "visibility", "rubric"],
+        "properties": {
+          "lab_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{1,63}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "visibility": { "type": "string", "enum": ["public", "private"] },
+          "rubric": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      }
+    }
+  }
+}

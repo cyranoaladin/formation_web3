@@ -1,0 +1,11 @@
+{
+  "lab_id": "hello-proof",
+  "title": "Hello Proof",
+  "version": "0.1.0",
+  "description": "Minimal lab used to prove the end-to-end submission→run→proof flow.",
+  "visibility": "public",
+  "rubric": "placeholder",
+  "tags": ["hello", "proof", "demo"],
+  "created_at": "2026-01-20T00:00:00Z",
+  "updated_at": "2026-01-20T00:00:00Z"
+}

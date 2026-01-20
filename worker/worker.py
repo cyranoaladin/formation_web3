@@ -90,6 +90,9 @@ def main():
         submission_id = sub.get("submission_id")
         lab_id = sub.get("lab_id")
         invalid = (lab_id == "invalid_proof")
+        is_hello = (lab_id == "hello-proof")
+        decision = "validated" if is_hello else "needs_review"
+        score_auto_val = 100 if is_hello else 50
         upload_path = sub.get("upload_path") or ""
 
         run_id = gen_id("run")
@@ -133,8 +136,8 @@ def main():
                 "submission_id": submission_id,
                 "lab_id": lab_id,
                 "created_at": now(),
-                "decision_hint": "needs_review",
-                "score": {"auto": 50, "rubric": "placeholder"},
+                "decision_hint": decision,
+                "score": {"auto": score_auto_val, "rubric": "placeholder"},
                 "artifacts": {
                     "logs": arts["logs"],
                     "tests": arts["tests"],
@@ -158,14 +161,14 @@ def main():
                         "status": "completed",
                         "updated_at": now(),
                         "proof_bundle_id": proof_id,
-                        "result": {"ok": True, "decision_hint": "needs_review", "score_auto": 50, "files_count": len(arts["files"])}
+                        "result": {"ok": True, "decision_hint": decision, "score_auto": score_auto_val, "files_count": len(arts["files"])}
                     }},
                 )
 
                 # Mark submission as needs_review
                 db.submissions.update_one(
                     {"submission_id": submission_id},
-                    {"$set": {"status": "needs_review", "updated_at": now()}},
+                    {"$set": {"status": ("validated" if is_hello else "needs_review"), "updated_at": now()}},
                 )
 
                 print(f"[worker] completed submission_id={submission_id} run_id={run_id} proof_id={proof_id}", flush=True)

@@ -168,3 +168,25 @@ def get_run(run_id: str):
     return doc
 
 # patched-by: tools/safe_patch.py
+
+
+@app.get("/labs")
+def list_labs():
+    base = Path(os.getenv("LABS_ROOT", "/repo/labs/specs"))
+    labs = []
+    try:
+        if base.exists():
+            for d in sorted([pp for pp in base.iterdir() if pp.is_dir()]):
+                lp = d / "lab.json"
+                if lp.is_file():
+                    with lp.open('r', encoding='utf-8') as f:
+                        try:
+                            doc = json.load(f)
+                            labs.append(doc)
+                        except Exception:
+                            pass
+    except Exception:
+        pass
+    idx = {"labs": labs}
+    _validate("labs_index", idx)
+    return idx
