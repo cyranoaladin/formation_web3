@@ -1,3 +1,22 @@
+#!/usr/bin/env bash
+# STEP 053 — runner_minimal_fix_outputs (CODE CHANGE)
+# Ensures runner/minimal.py ALWAYS produces out/result.json and out/logs.txt
+
+set -euo pipefail
+
+TARGET="runner/minimal.py"
+TS=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="tools/logs/step_053_runner_fix_${TS}.txt"
+mkdir -p tools/logs
+
+{
+  echo "[INFO] STEP 053 @ ${TS}"
+
+  echo "== A) Patch runner/minimal.py =="
+  echo "Before SHA256: $(sha256sum $TARGET)"
+
+  # Rewrite file using EOF heredoc to avoid escaping hell
+  cat << 'EOF' > "$TARGET"
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse, json, os, shutil, subprocess, sys, zipfile, traceback
@@ -138,3 +157,55 @@ def main():
 
 if __name__ == '__main__':
     main()
+EOF
+
+  echo "After SHA256: $(sha256sum $TARGET)"
+
+  echo
+  echo "== B) Grep Verification =="
+  echo "Create dirs:"
+  grep -n "ensure_dir(out_dir)" "$TARGET"
+  echo "Write logs:"
+  grep -n "safe_write_text(logs_file" "$TARGET"
+  echo "Write result:"
+  grep -n "safe_write_text(res_file" "$TARGET"
+  echo "Try/Finally:"
+  grep -n "finally:" "$TARGET"
+
+  echo
+  echo "== C) Direct Verification (Standalone) =="
+  TEST_SB="/tmp/rbk_runner_test_053"
+  TEST_ZIP="/tmp/rbk_runner_test_053.zip"
+  
+  # Prepare dummy zip
+  echo "dummy content" > /tmp/dummy.txt
+  rm -f $TEST_ZIP
+  zip -j $TEST_ZIP /tmp/dummy.txt >/dev/null
+  
+  echo "[Test] Running minimal.py directly..."
+  python3 $TARGET --lab-id hello-proof --submission-id test_053 --zip $TEST_ZIP --sandbox $TEST_SB
+  
+  echo "[Test] Checking outputs..."
+  if [[ -f "$TEST_SB/out/result.json" ]]; then
+      echo "PASS: result.json exists"
+      cat "$TEST_SB/out/result.json"
+      # Validate JSON
+      python3 -c "import json; print('JSON OK' if json.load(open('$TEST_SB/out/result.json')) else 'JSON FAIL')"
+  else
+      echo "FAIL: result.json missing"
+      exit 1
+  fi
+  
+  if [[ -f "$TEST_SB/out/logs.txt" ]]; then
+      echo "PASS: logs.txt exists"
+      grep "dummy.txt" "$TEST_SB/out/logs.txt" || true
+  else
+      echo "FAIL: logs.txt missing"
+      exit 1
+  fi
+  
+  echo
+  echo "== D) Verify Harness =="
+  bash tools/verify.sh --spec tools/verify.spec
+
+} | tee "$LOG_FILE"
