@@ -190,3 +190,12 @@ def list_labs():
     idx = {"labs": labs}
     _validate("labs_index", idx)
     return idx
+
+
+@app.get("/proofs/{proof_bundle_id}")
+def get_proof(proof_bundle_id: str):
+    db = get_db()
+    doc = db.proof_bundles.find_one({"proof_bundle_id": proof_bundle_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="proof_not_found")
+    return doc

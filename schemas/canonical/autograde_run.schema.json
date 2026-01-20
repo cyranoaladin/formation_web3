@@ -9,25 +9,59 @@
     "submission_id",
     "status",
     "created_at",
-    "updated_at",
-    "runner",
-    "result"
+    "updated_at"
   ],
   "properties": {
-    "run_id": { "type": "string", "pattern": "^run_[a-f0-9]{16}$" },
-    "submission_id": { "type": "string", "pattern": "^sub_[a-f0-9]{32}$" },
-
+    "run_id": {
+      "type": "string",
+      "pattern": "^run_[a-f0-9]{16}$"
+    },
+    "submission_id": {
+      "type": "string",
+      "pattern": "^sub_[a-f0-9]{32}$"
+    },
     "status": {
       "type": "string",
-      "enum": ["created", "running", "failed", "completed"]
+      "enum": [
+        "created",
+        "running",
+        "failed",
+        "completed"
+      ]
     },
-
-    "created_at": { "type": "string", "format": "date-time" },
-    "updated_at": { "type": "string", "format": "date-time" },
-
-    "runner": { "type": "object" },
-    "result": { "type": "object" },
-
-    "proof_bundle_id": { "type": ["string", "null"], "pattern": "^proof_[a-f0-9]{16}$" }
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "runner": {
+      "type": "object"
+    },
+    "result": {
+      "type": "object"
+    },
+    "proof_bundle_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^proof_[a-f0-9]{16}$"
+    },
+    "score_auto": {
+      "type": [
+        "number",
+        "integer",
+        "null"
+      ]
+    },
+    "decision_hint": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
   }
 }

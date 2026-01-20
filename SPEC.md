@@ -52,10 +52,17 @@
 - API répond 200 sur /health
 - Upload zip crée une submission en queued
 - Worker produit un run et un proof_bundle
-- RAG retourne une réponse via /rag/query
 
+<!-- BEGIN:SYNC_ENDPOINTS -->
+
+- GET /health
+- POST /submissions/upload_zip
+- GET /submissions/{submission_id}
+- GET /runs/{run_id}
+- GET /proofs/{proof_bundle_id}
+
+<!-- END:SYNC_ENDPOINTS -->
 ## Endpoints
 GET /health
 POST /submissions/upload_zip
-POST /rag/query
 

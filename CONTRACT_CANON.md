@@ -10,6 +10,15 @@
 - RAG (présence du répertoire rag/)
 - MongoDB
 
+<!-- BEGIN:SYNC_ENDPOINTS -->
+
+- GET /health
+- POST /submissions/upload_zip
+- GET /submissions/{submission_id}
+- GET /runs/{run_id}
+- GET /proofs/{proof_bundle_id}
+
+<!-- END:SYNC_ENDPOINTS -->
 ## Endpoints
 - /health
 - /runs/{run_id}

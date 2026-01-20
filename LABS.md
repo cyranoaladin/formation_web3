@@ -1,5 +1,17 @@
 # Labs
 
+## Endpoints (synchronised)
+<!-- BEGIN:SYNC_ENDPOINTS -->
+
+- GET /health
+- POST /submissions/upload_zip
+- GET /submissions/{submission_id}
+- GET /runs/{run_id}
+- GET /proofs/{proof_bundle_id}
+
+<!-- END:SYNC_ENDPOINTS -->
+
+
 ## Objectif
 - Les labs sont des unités d’évaluation exécutables, évaluées par l’autograding.
 - Les exécutions produisent un run et un proof_bundle (preuves) associés aux soumissions.

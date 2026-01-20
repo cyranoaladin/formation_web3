@@ -1,5 +1,17 @@
 # Autograding
 
+## Endpoints (synchronised)
+<!-- BEGIN:SYNC_ENDPOINTS -->
+
+- GET /health
+- POST /submissions/upload_zip
+- GET /submissions/{submission_id}
+- GET /runs/{run_id}
+- GET /proofs/{proof_bundle_id}
+
+<!-- END:SYNC_ENDPOINTS -->
+
+
 ## Objectif
 - L’autograder RBK évalue une soumission, produit un run et un proof_bundle, et met à jour le statut.
 

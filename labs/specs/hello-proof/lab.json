@@ -5,7 +5,16 @@
   "description": "Minimal lab used to prove the end-to-end submission→run→proof flow.",
   "visibility": "public",
   "rubric": "placeholder",
-  "tags": ["hello", "proof", "demo"],
+  "tags": [
+    "hello",
+    "proof",
+    "demo"
+  ],
   "created_at": "2026-01-20T00:00:00Z",
-  "updated_at": "2026-01-20T00:00:00Z"
+  "updated_at": "2026-01-20T00:00:00Z",
+  "command": "sh -lc 'echo HELLO_PROOF && echo files=$(find . -type f | wc -l)'",
+  "expected_artifacts": [
+    "logs.txt",
+    "result.json"
+  ]
 }

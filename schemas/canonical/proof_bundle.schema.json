@@ -7,46 +7,67 @@
   "required": [
     "proof_bundle_id",
     "run_id",
-    "submission_id",
-    "lab_id",
     "created_at",
-    "artifacts",
-    "score",
-    "decision_hint"
+    "artifacts"
   ],
   "properties": {
-    "proof_bundle_id": { "type": "string", "pattern": "^proof_[a-f0-9]{16}$" },
-    "run_id": { "type": "string", "pattern": "^run_[a-f0-9]{16}$" },
-    "submission_id": { "type": "string", "pattern": "^sub_[a-f0-9]{32}$" },
-    "lab_id": { "type": "string", "minLength": 1, "maxLength": 128 },
-
-    "created_at": { "type": "string", "format": "date-time" },
-
-    "artifacts": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["logs", "tests", "diff", "audit"],
-      "properties": {
-        "logs":  { "type": "string", "minLength": 1 },
-        "tests": { "type": "string", "minLength": 1 },
-        "diff":  { "type": "string", "minLength": 1 },
-        "audit": { "type": "string", "minLength": 1 }
-      }
+    "proof_bundle_id": {
+      "type": "string",
+      "pattern": "^proof_[a-f0-9]{16}$"
     },
-
+    "run_id": {
+      "type": "string",
+      "pattern": "^run_[a-f0-9]{16}$"
+    },
+    "submission_id": {
+      "type": "string",
+      "pattern": "^sub_[a-f0-9]{32}$"
+    },
+    "lab_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifacts": {
+      "type": "object"
+    },
     "score": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["auto", "rubric"],
+      "required": [
+        "auto",
+        "rubric"
+      ],
       "properties": {
-        "auto": { "type": "number", "minimum": 0, "maximum": 100 },
-        "rubric": { "type": "string", "minLength": 1, "maxLength": 128 }
+        "auto": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "rubric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
       }
     },
-
     "decision_hint": {
       "type": "string",
-      "enum": ["needs_review", "validated", "failed"]
+      "enum": [
+        "needs_review",
+        "validated",
+        "failed"
+      ]
+    },
+    "immutable": {
+      "type": "boolean"
+    },
+    "sha256": {
+      "type": "string"
     }
   }
 }

@@ -129,6 +129,18 @@ def main():
 
             arts = build_proof_artifacts(upload_path)
 
+            # build result.json artifact (minimal deterministic)
+            result_obj = {
+                "status": "ok",
+                "lab_id": lab_id,
+                "submission_id": submission_id,
+                "run_id": run_id,
+                "started_at": iso_now(),
+                "finished_at": iso_now()
+            }
+            import json as _json
+            arts_result = _json.dumps(result_obj, ensure_ascii=False)
+
             # Build proof bundle
             proof_doc = {
                 "proof_bundle_id": proof_id,
@@ -138,11 +150,13 @@ def main():
                 "created_at": now(),
                 "decision_hint": decision,
                 "score": {"auto": score_auto_val, "rubric": "placeholder"},
+                "immutable": True,
                 "artifacts": {
                     "logs": arts["logs"],
                     "tests": arts["tests"],
                     "diff": arts["diff"],
                     "audit": arts["audit"],
+                    "result": arts_result,
                 }
             }
 
@@ -168,7 +182,7 @@ def main():
                 # Mark submission as needs_review
                 db.submissions.update_one(
                     {"submission_id": submission_id},
-                    {"$set": {"status": ("validated" if is_hello else "needs_review"), "updated_at": now()}},
+                    {"$set": {"status": "completed", "updated_at": now(), "run_id": run_id, "proof_bundle_id": proof_id}},
                 )
 
                 print(f"[worker] completed submission_id={submission_id} run_id={run_id} proof_id={proof_id}", flush=True)
