@@ -1,5 +1,5 @@
 <!-- CI badge placeholder: set remote to GitHub and replace OWNER/REPO -->
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/cyranoaladin/formation_web3/actions/workflows/ci.yml/badge.svg)](https://github.com/cyranoaladin/formation_web3/actions/workflows/ci.yml)
 
 # RBK Labs Platform – Solana Senior by Design
 
