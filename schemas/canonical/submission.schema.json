@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rbk://schemas/canonical/submission.schema.json",
+  "title": "RBK Submission (Canonical)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "submission_id",
+    "student_id",
+    "lab_id",
+    "status",
+    "upload_path",
+    "upload_sha256",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "submission_id": { "type": "string", "pattern": "^sub_[a-f0-9]{32}$" },
+    "student_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "lab_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+
+    "status": {
+      "type": "string",
+      "enum": ["uploaded", "queued", "running", "failed", "needs_review", "validated"]
+    },
+
+    "upload_path": { "type": "string", "minLength": 1 },
+    "upload_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+
+    "latest_run_id": { "type": ["string", "null"], "pattern": "^run_[a-f0-9]{16}$" },
+
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+
+    "stale_requeued": { "type": ["boolean", "null"] }
+  }
+}

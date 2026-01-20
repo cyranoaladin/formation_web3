@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rbk://schemas/canonical/autograde_run.schema.json",
+  "title": "RBK Autograde Run (Canonical)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "run_id",
+    "submission_id",
+    "status",
+    "created_at",
+    "updated_at",
+    "runner",
+    "result"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "pattern": "^run_[a-f0-9]{16}$" },
+    "submission_id": { "type": "string", "pattern": "^sub_[a-f0-9]{32}$" },
+
+    "status": {
+      "type": "string",
+      "enum": ["created", "running", "failed", "completed"]
+    },
+
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+
+    "runner": { "type": "object" },
+    "result": { "type": "object" },
+
+    "proof_bundle_id": { "type": ["string", "null"], "pattern": "^proof_[a-f0-9]{16}$" }
+  }
+}

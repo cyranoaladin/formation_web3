@@ -1,0 +1,198 @@
+import os
+import time
+import traceback
+from datetime import datetime, timedelta
+from pathlib import Path
+from pymongo import MongoClient
+from pymongo.collection import Collection
+
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://mongo:27017")
+MONGODB_DB = os.getenv("MONGODB_DB", "rbk_labs")
+
+POLL_INTERVAL = int(os.getenv("WORKER_POLL_INTERVAL", "5"))
+STALE_MIN = int(os.getenv("WORKER_STALE_MIN", "10"))  # minutes
+
+def now() -> datetime:
+    return datetime.utcnow()
+
+def gen_short_id(prefix: str, nbytes: int = 8) -> str:
+    return f"{prefix}_{os.urandom(nbytes).hex()}"
+
+def requeue_stale(submissions: Collection) -> int:
+    cutoff = now() - timedelta(minutes=STALE_MIN)
+    res = submissions.update_many(
+        {"status": "running", "updated_at": {"$lt": cutoff}},
+        {"$set": {"status": "queued", "updated_at": now(), "stale_requeued": True}},
+    )
+    return int(res.modified_count)
+
+def safe_read_text(path: Path, limit: int = 50_000) -> str:
+    try:
+        data = path.read_text(encoding="utf-8", errors="replace")
+        if len(data) > limit:
+            return data[:limit] + "\n...[truncated]\n"
+        return data
+    except Exception as e:
+        return f"[unreadable:{path.name}] {e}"
+
+def build_artifacts(upload_path: str) -> dict:
+    p = Path(upload_path)
+    files = []
+    if p.exists():
+        for f in sorted(p.rglob("*")):
+            if f.is_file():
+                files.append(str(f.relative_to(p)))
+    # On produit des “preuves” simples (placeholder mais structurées)
+    readme = safe_read_text(p / "README.md") if p.exists() else "[missing upload_path]"
+    patch = safe_read_text(p / "patch.diff") if p.exists() else "[no patch.diff]"
+    audit = safe_read_text(p / "proofs" / "audit_note.md") if p.exists() else "[no proofs/audit_note.md]"
+
+    logs = (
+        "RBK Worker Logs (placeholder)\n"
+        f"- upload_path: {upload_path}\n"
+        f"- files_count: {len(files)}\n"
+        f"- files: {files[:50]}\n"
+    )
+
+    tests = (
+        "RBK Tests (placeholder)\n"
+        "- Status: not executed in this phase\n"
+        "- Next: runner container execution + unit tests\n"
+    )
+
+    return {
+        "logs": logs,
+        "tests": tests,
+        "diff": patch,
+        "audit": audit,
+        "readme": readme,
+        "files": files,
+    }
+
+def main():
+    client = MongoClient(MONGODB_URI)
+    db = client[MONGODB_DB]
+
+    submissions = db.submissions
+    runs = db.autograde_runs
+    proofs = db.proof_bundles
+
+    print(f"[worker] connected to MongoDB: {MONGODB_URI} db={MONGODB_DB}", flush=True)
+
+    stale = requeue_stale(submissions)
+    print(f"[worker] requeued stale running submissions: {stale}", flush=True)
+
+    while True:
+        # Claim atomique d'une submission "queued"
+        claimed = submissions.find_one_and_update(
+            {"status": "queued"},
+            {"$set": {"status": "running", "updated_at": now()}},
+            sort=[("created_at", 1)],
+            return_document=True,
+        )
+
+        if not claimed:
+            print("[worker] idle: no queued submissions", flush=True)
+            time.sleep(POLL_INTERVAL)
+            continue
+
+        submission_id = claimed.get("submission_id")
+        lab_id = claimed.get("lab_id")
+        upload_path = claimed.get("upload_path")
+
+        run_id = gen_short_id("run", 8)
+        proof_id = gen_short_id("proof", 8)
+
+        print(f"[worker] claimed submission_id={submission_id} lab_id={lab_id}", flush=True)
+
+        try:
+            # 1) create run (created)
+            run_doc = {
+                "run_id": run_id,
+                "submission_id": submission_id,
+                "status": "created",
+                "created_at": now(),
+                "updated_at": now(),
+                "runner": {"kind": "placeholder"},
+                "result": {},
+                "proof_bundle_id": None,
+            }
+            runs.insert_one(run_doc)
+
+            # 2) link run -> submission
+            submissions.update_one(
+                {"submission_id": submission_id},
+                {"$set": {"latest_run_id": run_id, "updated_at": now()}},
+            )
+
+            # 3) set run running
+            runs.update_one(
+                {"run_id": run_id},
+                {"$set": {"status": "running", "updated_at": now()}},
+            )
+
+            # 4) build artifacts
+            arts = build_artifacts(upload_path)
+
+            # 5) create proof bundle (decision_hint par défaut = needs_review)
+            proof_doc = {
+                "proof_bundle_id": proof_id,
+                "run_id": run_id,
+                "submission_id": submission_id,
+                "lab_id": lab_id,
+                "created_at": now(),
+                "artifacts": {
+                    "logs": arts["logs"],
+                    "tests": arts["tests"],
+                    "diff": arts["diff"],
+                    "audit": arts["audit"],
+                },
+                "score": {
+                    "auto": 50,
+                    "rubric": str(lab_id) if lab_id else "unknown",
+                },
+                "decision_hint": "needs_review",
+            }
+            proofs.insert_one(proof_doc)
+
+            # 6) mark run completed
+            runs.update_one(
+                {"run_id": run_id},
+                {"$set": {
+                    "status": "completed",
+                    "updated_at": now(),
+                    "proof_bundle_id": proof_id,
+                    "result": {
+                        "ok": True,
+                        "decision_hint": "needs_review",
+                        "score_auto": 50,
+                        "files_count": len(arts["files"]),
+                    }
+                }},
+            )
+
+            # 7) mark submission needs_review (jamais validated automatiquement)
+            submissions.update_one(
+                {"submission_id": submission_id},
+                {"$set": {"status": "needs_review", "updated_at": now()}},
+            )
+
+            print(f"[worker] completed submission_id={submission_id} run_id={run_id} proof_id={proof_id}", flush=True)
+
+        except Exception as e:
+            err = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            print(f"[worker] ERROR for submission_id={submission_id}: {e}\n{err}", flush=True)
+
+            runs.update_one(
+                {"run_id": run_id},
+                {"$set": {"status": "failed", "updated_at": now(), "result": {"ok": False, "error": str(e)}}},
+            )
+            submissions.update_one(
+                {"submission_id": submission_id},
+                {"$set": {"status": "failed", "updated_at": now()}},
+            )
+
+        time.sleep(0.2)
+
+if __name__ == "__main__":
+    main()

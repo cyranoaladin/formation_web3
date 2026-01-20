@@ -7,3 +7,14 @@
 # Environment files
 .env
 .env.*
+
+# Added by tools/steps/032_fix_untracked_blockers.sh
+ui/node_modules/
+**/__pycache__/
+*.pyc
+dist/
+build/
+.cache/
+.pytest_cache/
+*.pem
+*.key
