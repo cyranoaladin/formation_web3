@@ -7,6 +7,8 @@ from pathlib import Path
 import hashlib
 import zipfile
 import os
+import json
+import jsonschema
 import shutil
 
 app = FastAPI(title="RBK Labs API", version="0.1.0")
@@ -76,6 +78,21 @@ def safe_extract_zip(zip_path: Path, dest_dir: Path) -> dict:
 
     return {"files": file_count, "bytes": total_unzipped}
 
+
+
+SCHEMA_ROOT = "/repo/schemas/canonical"
+
+
+def _load_schema(name: str):
+    import json, os
+    path = os.path.join(SCHEMA_ROOT, f"{name}.schema.json")
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _validate(name: str, data: dict):
+    schema = _load_schema(name)
+    jsonschema.validate(instance=data, schema=schema)
 @app.get("/health", response_model=Health)
 def health():
     return Health()
@@ -127,6 +144,8 @@ async def upload_zip(
     )
 
     db = get_db()
+    doc_json = doc.model_dump(mode="json")
+    _validate("submission", doc_json);
     db.submissions.insert_one(doc.model_dump())
 
     return SubmissionCreateResponse(submission_id=sub_id, status="queued", upload_id=upload_id)

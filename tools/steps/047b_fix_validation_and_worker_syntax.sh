@@ -1,4 +1,40 @@
-import os
+#!/usr/bin/env bash
+# Step 047b — fix_validation_and_worker_syntax
+# Goal: Fix worker SyntaxError and align API/worker validation with canonical schemas
+# Changes:
+#  - API: validate submission against JSON-mode dict (datetimes serialized)
+#  - Worker: rewrite run/proof creation to build full docs, validate with RFC3339 timestamps, include score.rubric
+# Proofs: rebuild, /health OK, valid + invalid flows, logs, git status
+
+set -euo pipefail
+
+patch_api() {
+python3 - <<'PY'
+from pathlib import Path
+p=Path('api/app/main.py')
+s=p.read_text(encoding='utf-8')
+changed=False
+# Replace validation line to use JSON-mode dump
+s2=s.replace(
+    '_validate("submission", doc.model_dump());\n    db.submissions.insert_one(doc.model_dump())',
+    'doc_json = doc.model_dump(mode="json")\n    _validate("submission", doc_json);\n    db.submissions.insert_one(doc.model_dump())'
+)
+if s2!=s:
+    p.write_text(s2, encoding='utf-8')
+    print('API_VALIDATION_JSON_MODE=1')
+    changed=True
+else:
+    print('API_VALIDATION_JSON_MODE=0')
+PY
+}
+
+patch_worker() {
+python3 - <<'PY'
+from pathlib import Path
+p=Path('worker/worker.py')
+s=p.read_text(encoding='utf-8')
+
+new='''import os
 import time
 import traceback
 from datetime import datetime, timedelta
@@ -47,7 +83,7 @@ def requeue_stale(db) -> int:
 def safe_read(path: Path, limit: int = 50000) -> str:
     try:
         s = path.read_text(encoding="utf-8", errors="replace")
-        return s if len(s) <= limit else s[:limit] + "\n...[truncated]\n"
+        return s if len(s) <= limit else s[:limit] + "\\n...[truncated]\\n"
     except Exception as e:
         return f"[unreadable:{path.name}] {e}"
 
@@ -59,8 +95,8 @@ def build_proof_artifacts(upload_path: str) -> dict:
             if f.is_file():
                 files.append(str(f.relative_to(root)))
     return {
-        "logs": "RBK Worker Logs (placeholder)\\n- upload_path: %s\\n- files_count: %d\\n" % (upload_path, len(files)),
-        "tests": "RBK Tests (placeholder)\\n- not executed yet\\n",
+        "logs": "RBK Worker Logs (placeholder)\\\\n- upload_path: %s\\\\n- files_count: %d\\\\n" % (upload_path, len(files)),
+        "tests": "RBK Tests (placeholder)\\\\n- not executed yet\\\\n",
         "diff": safe_read(root / "patch.diff") if root.exists() else "[missing upload_path]",
         "audit": safe_read(root / "proofs" / "audit_note.md") if root.exists() else "[missing upload_path]",
         "files": files,
@@ -178,7 +214,7 @@ def main():
         except Exception as e:
             import traceback
             err = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-            print(f"[worker] ERROR: {e}\n{err}", flush=True)
+            print(f"[worker] ERROR: {e}\\n{err}", flush=True)
             db.submissions.update_one(
                 {"submission_id": submission_id},
                 {"$set": {"status": "failed", "updated_at": now()}},
@@ -188,3 +224,81 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''
+
+# Overwrite file atomically
+p.write_text(new, encoding='utf-8')
+print('WORKER_REWRITTEN=1')
+PY
+}
+
+patch_api
+patch_worker
+
+echo "--- docker compose up -d --build (api, worker) ---"
+docker compose up -d --build api worker
+
+echo "--- curl /health ---"
+curl -sS -w "\nHTTP=%{http_code}\n" http://localhost:8000/health -o /tmp/health_after_047b.json
+cat /tmp/health_after_047b.json || true
+
+# Valid flow
+echo "--- VALID: upload_zip lab_demo ---"
+VALID_OUT=/tmp/upl_047b_valid.json
+set +e
+curl -sS -o "$VALID_OUT" -w "HTTP=%{http_code}\n" -F file=@tests/fixtures/minimal.zip -F student_id=stu_valid_b -F lab_id=lab_demo http://localhost:8000/submissions/upload_zip
+rc=$?
+set -e
+echo "CURL_RC=${rc}"; cat "$VALID_OUT"; echo
+VALID_SUB=$(python3 - <<'PY'
+import json,sys
+j=json.load(open('/tmp/upl_047b_valid.json'))
+print(j.get('submission_id',''))
+PY
+)
+
+# poll until terminal
+for i in $(seq 1 60); do
+  curl -sS -o /tmp/sub_valid_b.json http://localhost:8000/submissions/$VALID_SUB >/dev/null || true
+  st=$(python3 - <<'PY'
+import json
+print(json.load(open('/tmp/sub_valid_b.json')).get('status',''))
+PY
+)
+  [[ "$st" != "queued" && "$st" != "running" && -n "$st" ]] && break
+  sleep 1
+done
+echo "FINAL_STATUS_VALID_B=$st"; cat /tmp/sub_valid_b.json; echo
+
+# Invalid flow
+echo "--- INVALID: upload_zip invalid_proof ---"
+INV_OUT=/tmp/upl_047b_invalid.json
+set +e
+curl -sS -o "$INV_OUT" -w "HTTP=%{http_code}\n" -F file=@tests/fixtures/minimal.zip -F student_id=stu_invalid_b -F lab_id=invalid_proof http://localhost:8000/submissions/upload_zip
+rc=$?
+set -e
+echo "CURL_RC=${rc}"; cat "$INV_OUT"; echo
+INV_SUB=$(python3 - <<'PY'
+import json,sys
+j=json.load(open('/tmp/upl_047b_invalid.json'))
+print(j.get('submission_id',''))
+PY
+)
+for i in $(seq 1 60); do
+  curl -sS -o /tmp/sub_invalid_b.json http://localhost:8000/submissions/$INV_SUB >/dev/null || true
+  st=$(python3 - <<'PY'
+import json
+print(json.load(open('/tmp/sub_invalid_b.json')).get('status',''))
+PY
+)
+  [[ "$st" == "needs_review" ]] && break
+  sleep 1
+done
+echo "FINAL_STATUS_INVALID_B=$st"; cat /tmp/sub_invalid_b.json; echo
+
+# Logs for context
+echo "--- docker compose logs --tail=120 worker ---"
+docker compose logs --tail=120 worker || true
+
+echo "--- git status --porcelain ---"
+git status --porcelain | sed -n '1,200p'

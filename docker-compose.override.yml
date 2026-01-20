@@ -1,0 +1,7 @@
+services:
+  api:
+    volumes:
+      - ./:/repo:ro
+  worker:
+    volumes:
+      - ./:/repo:ro
