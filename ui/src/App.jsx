@@ -97,6 +97,20 @@ export default function App() {
     }
   }
 
+
+  async function onLabs() {
+    setBusy(true);
+    setOut("");
+    try {
+      const j = await apiGet("/labs");
+      setOut(prettyJson(j));
+    } catch (e) {
+      setOut(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", padding: 16, maxWidth: 960, margin: "0 auto" }}>
       <h1 style={{ margin: "8px 0 4px" }}>RBK Labs</h1>
