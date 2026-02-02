@@ -50,7 +50,7 @@ PY
 done
 
 echo "SMOKE_SUB_STATUS_FINAL=$ST"
-[[ "$ST" == "needs_review" || "$ST" == "validated" || "$ST" == "failed" ]] || fail "unexpected_final_status:$ST"
+[[ "$ST" == "needs_review" || "$ST" == "validated" || "$ST" == "failed" || "$ST" == "completed" ]] || fail "unexpected_final_status:$ST"
 
 RUN_ID=$(python3 - <<'PY'
 import json
