@@ -1,0 +1,21 @@
+# API dependencies
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+pymongo==4.10.1
+python-multipart==0.0.20
+jsonschema>=4.21.0,<5
+
+# Worker dependencies
+python-dotenv==1.0.1
+
+# Dev/Test dependencies
+pytest
+pytest-cov
+httpx
+requests
+mongomock
+ruff
+
+

@@ -1,6 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from .routers.labs import router as labs_router
+from .routers.rag import router as rag_router
 from .models import Health, SubmissionCreateResponse, SubmissionDoc, gen_id
+from .routers.rag import router as rag_router
 from .db import get_db
 from datetime import datetime
 from pathlib import Path
@@ -18,11 +21,23 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from prometheus_fastapi_instrumentator import Instrumentator
+Instrumentator().instrument(app).expose(app)
+
+app.include_router(rag_router)
+
+app.include_router(labs_router, prefix="/labs")
+from .routers.mentor import router as mentor_router
+app.include_router(mentor_router, prefix="/mentor", tags=["mentor"])
+
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_ROOT", "/tmp/rbk_uploads"))
 MAX_ZIP_BYTES = int(os.getenv("MAX_ZIP_BYTES", str(50 * 1024 * 1024)))  # 50MB
@@ -168,28 +183,6 @@ def get_run(run_id: str):
     return doc
 
 # patched-by: tools/safe_patch.py
-
-
-@app.get("/labs")
-def list_labs():
-    base = Path(os.getenv("LABS_ROOT", "/repo/labs/specs"))
-    labs = []
-    try:
-        if base.exists():
-            for d in sorted([pp for pp in base.iterdir() if pp.is_dir()]):
-                lp = d / "lab.json"
-                if lp.is_file():
-                    with lp.open('r', encoding='utf-8') as f:
-                        try:
-                            doc = json.load(f)
-                            labs.append(doc)
-                        except Exception:
-                            pass
-    except Exception:
-        pass
-    idx = {"labs": labs}
-    _validate("labs_index", idx)
-    return idx
 
 
 @app.get("/proofs/{proof_bundle_id}")

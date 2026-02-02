@@ -1,0 +1,60 @@
+---
+- name: Deploy RBK Labs Platform
+  hosts: all
+  become: true
+  vars:
+    repo_url: "https://github.com/your-org/formation_web3.git"
+    dest_dir: "/opt/rbk-labs"
+
+  tasks:
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Clone Repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ dest_dir }}"
+        version: main
+        force: yes
+
+    - name: Create Production Environment File
+      copy:
+        dest: "{{ dest_dir }}/.env"
+        content: |
+          MONGODB_DB=rbk_labs_prod
+          RBK_ENV=production
+          WORKER_POLL_INTERVAL=5
+          # Add other secrets here
+
+    - name: Start Docker Compose
+      command: docker compose -f docker-compose.prod.yml up -d --build
+      args:
+        chdir: "{{ dest_dir }}"

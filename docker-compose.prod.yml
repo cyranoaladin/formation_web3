@@ -1,0 +1,89 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: rbk-mongo
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: rbk-api:prod
+    container_name: rbk-api
+    depends_on:
+      mongo:
+        condition: service_started
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017"
+      MONGODB_DB: "rbk_labs"
+      RBK_ENV: "production"
+      # Secrets should be injected via .env file or secret manager
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/tmp/rbk_uploads
+    restart: always
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    image: rbk-worker:prod
+    container_name: rbk-worker
+    depends_on:
+      mongo:
+        condition: service_started
+    environment:
+      MONGODB_URI: "mongodb://mongo:27017"
+      MONGODB_DB: "rbk_labs"
+      WORKER_POLL_INTERVAL: "5"
+      RBK_ENV: "production"
+      RBK_API_BASE_URL: "http://api:8000"
+      HOST_PWD: ${PWD}
+      RUNNER_BACKEND: "docker"
+    volumes:
+      - uploads:/tmp/rbk_uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  runner-base:
+    build:
+      context: ./runner
+    image: rbk-runner:latest
+    profiles: [ "tools" ]
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    image: rbk-ui:prod
+    container_name: rbk-ui
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "3000:80"
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    restart: always
+
+volumes:
+
+  mongo_data:
+  uploads:

@@ -1,0 +1,1422 @@
+[
+  {
+    "id": "canon_chunk_1",
+    "text": "# CHECK-01: Owner Validation Toujours verifier que le compte passe appartient au bon proprietaire logique. L'erreur classique: accepter un compte arbitraire et ne pas verifier son champ owner. Exemple (verification manuelle): ```rust require_keys_eq!(vault.owner, authority.key(), ErrorCode::Unauthorized); ``` Ou via contrainte Anchor: ```rust #[account(constraint = vault.owner == authority.key())] ``` # CHECK-02: PDA Verification Un PDA doit etre verifie par ses seeds et son bump. Sans ces",
+    "source": "canon"
+  },
+  {
+    "id": "canon_chunk_2",
+    "text": "contraintes, le client peut passer un compte arbitraire (fake PDA). Exemple (seeds + bump): ```rust #[account( mut, seeds = [b\"stats\", user.key().as_ref()], bump = user_stats.bump )] pub user_stats: Account<'info, UserStats>; ``` # CHECK-03: Signer vs Authority Signer signifie \"a signe la transaction\". Authority signifie \"a le droit\". Un compte peut signer sans etre l'autorite attendue. Il faut comparer la cle stockee dans l'etat. Exemple: ```rust require_keys_eq!(vault.authority,",
+    "source": "canon"
+  },
+  {
+    "id": "canon_chunk_3",
+    "text": "authority.key(), ErrorCode::Unauthorized); ``` Ou avec Anchor: ```rust #[account(has_one = authority)] pub vault: Account<'info, Vault>; ```",
+    "source": "canon"
+  },
+  {
+    "id": "security-02-unverified-pda_chunk_1",
+    "text": "# Security N1 \u2014 Unverified PDA (Fake Seeds) ## Contexte Le programme g\u00e8re un compte `UserStats` cens\u00e9 \u00eatre un **PDA** d\u00e9riv\u00e9 de l\u2019utilisateur : `[b\"stats\", user.key()]`. L\u2019instruction `claim_reward` v\u00e9rifie `user_stats.points > 100` pour payer une r\u00e9compense. ## Probl\u00e8me Le programme **ne v\u00e9rifie pas** que `user_stats` est bien le PDA attendu. Un attaquant peut cr\u00e9er un **faux compte** avec 9999 points et le passer \u00e0 l\u2019instruction. ## Mission Corriger `ClaimReward` en ajoutant la contrainte de",
+    "source": "security-02-unverified-pda"
+  },
+  {
+    "id": "security-02-unverified-pda_chunk_2",
+    "text": "PDA dans le contexte : - `seeds = [b\"stats\", user.key().as_ref()]` - `bump = user_stats.bump` Une fois patch\u00e9, le test d\u2019attaque doit \u00e9chouer (Constraint Error). ## Rappels - Test A : utilisateur l\u00e9gitime avec 10 points \u2192 \u00e9chec attendu. - Test A suite : 101 points \u2192 succ\u00e8s attendu. - Test B : faux compte \u2192 doit \u00e9chouer apr\u00e8s patch.",
+    "source": "security-02-unverified-pda"
+  },
+  {
+    "id": "track_solana_n1_chunk_1",
+    "text": "08b Niveau 1 \u2014 La Forge : Junior Web3 Builder 12 semaines pour briser les habitudes Web2 et rerouter chaque talent vers l\u2019excellence Rust/Solana. La Forge est un sas de rigueur cognitive, de s\u00e9curit\u00e9 syst\u00e9mique et de responsabilisation imm\u00e9diate. Vision & posture \u00ab Senior-by-Design \u00bb La Forge ne cherche pas des ex\u00e9cuteurs mais des architectes. La s\u00e9curit\u00e9 est int\u00e9gr\u00e9e d\u00e8s le jour 1 et chaque bloc de travail se conclut par des livrables v\u00e9rifiables (CLI, wallet, compteur). La m\u00e9thode \u00ab Cyborg",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "track_solana_n1_chunk_2",
+    "text": "2.0 \u00bb encadre l\u2019usage des IA pour \u00e9viter la d\u00e9pendance et privil\u00e9gier la v\u00e9rification humaine. Security Snippets Chaque session commence par 5 minutes sur une vuln\u00e9rabilit\u00e9 sp\u00e9cifique (unwrap, panic, comptes signataires, rent exemp). Cercle IA Cercle 1 (S1-S4) : IA = documentation explicative uniquement. Cercle 2 (S5-S8) : IA = pair debugger, prompts document\u00e9s. Cercle 3 (S9-S12) : IA = assistant d\u2019architecture, chaque ligne annot\u00e9e. Les quatre modules fondamentaux Module 1 (S1-S3) \u2014",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "track_solana_n1_chunk_3",
+    "text": "Fondamentaux Rust & Syst\u00e8me Ownership & borrowing, piles vs tas, r\u00e9f\u00e9rences & lifetimes. Exercices \u00ab ls \u00bb/\u00ab grep \u00bb pour ma\u00eetriser la gestion m\u00e9moire. Projet capstone : CLI r\u00e9impl\u00e9ment\u00e9e avec clippy clean. Ajout d\u2019un sous-module Performance & Observabilit\u00e9 (perf, bpftrace, profiling). Module 2 (S4-S6) \u2014 Cryptographie & Blockchain Signatures Ed25519, hashing SHA-256, Merkle trees. Wallet CLI : g\u00e9n\u00e9ration de seed phrase (BIP-39), signature/v\u00e9rification offline. Lab \u00ab Cryptography CTF Lite \u00bb :",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "track_solana_n1_chunk_4",
+    "text": "replay attack, cl\u00e9 mal g\u00e9n\u00e9r\u00e9e, collisions. Module 3 (S7-S9) \u2014 Solana natif & mod\u00e8le de compte process_instruction, d\u00e9s\u00e9rialisation Borsh manuelle, PDAs et bumps. Module \u00ab Common Bug Patterns \u00bb (Account confusion, CPI reentrancy, overflow). Capstone : compteur d\u00e9centralis\u00e9 deploy\u00e9 sur Devnet sans Anchor. Module 4 (S10-S12) \u2014 Web3 int\u00e9gr\u00e9s & CI/CD Web3.js 2.0, Wallet Adapters, React/Next.js & gestion d\u2019\u00e9tat transactionnel. Pipelines GitHub Actions (build Rust, tests, d\u00e9ploiement Devnet,",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "track_solana_n1_chunk_5",
+    "text": "v\u00e9rifiable). Project final : full-stack dApp, erreurs UX, gestion des statuts processed/confirmed/finalized. S\u00e9curit\u00e9, \u00e9valuations & SBT Les \u00ab Block Checks \u00bb filtrent par niveau (S3, S6, S9, S12) avec seuils progressifs et challenges bonus (optimisations, d\u00e9couvertes de vuln\u00e9rabilit\u00e9s, documentation). Tout est consign\u00e9 dans un SBT dynamique multi-couches qui ouvre l\u2019acc\u00e8s au Niveau 2. Block Checks 70% (S3), 75% (S6), 80% (S9), 85% (S12) + bonus challenges. Liste de Contr\u00f4le Guardian Verifier",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "track_solana_n1_chunk_6",
+    "text": "unwrap, signer, owner, clones & complexit\u00e9 CPU avant chaque merge. SBT Token gonfl\u00e9 de preuves (hashes IPFS) : rust_fundamentals, cryptography, native_solana, security_mindset. Metrics & accompagnement Indicateurs Taux de compl\u00e9tion cible : 70% vers N2. Moyenne Block Checks : 80%. Temps de triage bug : < 2h. Satisfaction s\u00e9curit\u00e9 : 4.5/5. Accompagnement Mentorat triple layer (senior, industry, peer). Office hours th\u00e9matiques (Rust, Solana, security, career, clinics). Challenges hebdomadaires",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "track_solana_n1_chunk_7",
+    "text": "(grep Rust, wallet multi-sig, vote natif).",
+    "source": "chapters/track_solana_n1"
+  },
+  {
+    "id": "tech_00_home_chunk_1",
+    "text": "FR EN High-Performance Builder Initiative \u2022 North Africa FORGER LE NOYAU DUR SOLANA. Ici, nous ne formons pas des spectateurs. Nous armons les b\u00e2tisseurs capables de \"ship\" des produits sur la blockchain la plus rapide au monde. Rejoignez l'effort pour installer l' esprit communautaire Solana en Tunisie. Acc\u00e8s direct Choisis ta porte d\u2019entr\u00e9e : mission ou hub Solana. EXPLORER LA MISSION Voir le Hub Solana Solana Hub \u2014 Tunis & remote squads Speed \u2022 Community \u2022 Rust Appel aux forces vives de",
+    "source": "chapters/tech_00_home"
+  },
+  {
+    "id": "tech_00_home_chunk_2",
+    "text": "l'\u00e9cosyst\u00e8me SUPERTEAM BUILDERS FONDATIONS FORGING THE HARD CORE SOLANA. We don't train spectators. We arm the builders capable of shipping on the world's fastest blockchain. Join the effort to install the Solana community ethos in North Africa. EXPLORE THE MISSION View Solana Hub Open call to the ecosystem forces SUPERTEAM BUILDERS FOUNDATIONS",
+    "source": "chapters/tech_00_home"
+  },
+  {
+    "id": "tech_00_home_en_chunk_1",
+    "text": "FR EN High-Performance Builder Initiative \u2022 North Africa FORGING THE HARD CORE SOLANA. We don't train spectators. We arm the builders capable of shipping on the world's fastest blockchain. Join the effort to install the Solana community ethos in North Africa. Direct access Pick your entry point: mission or Solana hub. EXPLORE THE MISSION View Solana Hub Solana Hub \u2014 Tunis & remote squads Speed \u2022 Community \u2022 Rust Open call to the ecosystem forces SUPERTEAM BUILDERS FOUNDATIONS",
+    "source": "chapters/tech_00_home_en"
+  },
+  {
+    "id": "tech_00_intro_chunk_1",
+    "text": "Tech Vision du Programme Former des architectes Web3 capables d'orchestrer des syst\u00e8mes distribu\u00e9s, d'utiliser l'IA comme copilote et d'appliquer une rigueur d'ing\u00e9nierie de production. Manifeste Ing\u00e9nieur IA/Web3 Posture R\u00e9fl\u00e9chir comme un\u00b7e architecte : invariants, surface d'attaque, compromis perf/s\u00e9curit\u00e9. It\u00e9rer vite avec des outils IA tout en gardant des revues humaines syst\u00e9matiques. Priorit\u00e9 absolue \u00e0 la s\u00fbret\u00e9 : mod\u00e9lisation de menaces, tests n\u00e9gatifs, observabilit\u00e9. Objectifs d'impact",
+    "source": "chapters/tech_00_intro"
+  },
+  {
+    "id": "tech_00_intro_chunk_2",
+    "text": "Production Livrer des artefacts auditables (code, ADR, diagrammes). Autonomie Ma\u00eetriser la cha\u00eene compl\u00e8te : ide \u2192 CI/CD \u2192 d\u00e9ploiements. Fiabilit\u00e9 Observabilit\u00e9, tests, reprises sur incident document\u00e9es. Veille Capacit\u00e9 \u00e0 comparer stacks (SVM/EVM) et choisir en contexte. Risques techniques adress\u00e9s Domaine Faille typique Rem\u00e8de Smart Contracts Absence de contr\u00f4les d'acc\u00e8s, reentrancy, mauvais seeds PDA. Tests n\u00e9gatifs + fuzzing Infra Manque de monitoring, absence de runbooks incident.",
+    "source": "chapters/tech_00_intro"
+  },
+  {
+    "id": "tech_00_intro_chunk_3",
+    "text": "Observabilit\u00e9 + exercices Data & APIs Endpoints sans rate-limit, donn\u00e9es non sign\u00e9es. Threat modeling API",
+    "source": "chapters/tech_00_intro"
+  },
+  {
+    "id": "tech_00_intro_en_chunk_1",
+    "text": "Tech Program Vision Train Solana-first architects who can design, audit, and operate distributed systems, with AI as a copilot and production-grade rigor. Builder Manifesto Posture Think like an architect: invariants, attack surface, perf/security trade-offs. Iterate fast with AI tools, keep human review as a gate. Security-by-default: threat modeling, negative tests, observability. Impact Goals Production Auditable artifacts (code, ADRs, diagrams). Autonomy End-to-end mastery: IDE \u2192 CI/CD \u2192",
+    "source": "chapters/tech_00_intro_en"
+  },
+  {
+    "id": "tech_00_intro_en_chunk_2",
+    "text": "deployments. Reliability Observability, tests, incident runbooks. Foresight Compare stacks (SVM/EVM) and choose with context. Risks we neutralize Domain Typical failure Remedy Smart Contracts Missing access control, reentrancy, bad PDA seeds. Negative tests + fuzzing Infrastructure No monitoring, no incident runbook. Obs + drills Data & APIs No rate limits, unsigned data. API threat modeling",
+    "source": "chapters/tech_00_intro_en"
+  },
+  {
+    "id": "tech_01_methodology_chunk_1",
+    "text": "M\u00e9thodo M\u00e9thodologie Augment\u00e9e par IA Peer-learning, flipped classroom et assistances IA combin\u00e9s pour maintenir une cadence soutenable sans sacrifier la rigueur technique. Principes P\u00e9dagogiques Peer-Learning Travail en bin\u00f4me/\u00e9quipe, relectures crois\u00e9es, design reviews courts et fr\u00e9quents. Flipped Classroom Pr\u00e9-lecture guid\u00e9e, labs synchrones pour l'application, sessions live r\u00e9serv\u00e9es aux points de blocage. IA Assist\u00e9e Utilisation cadr\u00e9e des LLM pour explorer, comparer solutions et g\u00e9n\u00e9rer",
+    "source": "chapters/tech_01_methodology"
+  },
+  {
+    "id": "tech_01_methodology_chunk_2",
+    "text": "tests, suivie d'une validation humaine obligatoire. Rythme Hebdomadaire (Skill Mirror & Block Check) Lundi Deep Tech Pair programming Sync Squad Objectifs sprint Mardi Labs Build & tests PO Sync Clart\u00e9 des crit\u00e8res Mercredi Office Hour Q&A mentor Mentor 1:1 D\u00e9blocage cibl\u00e9 Jeudi Skill Mirror Peer review Vendredi Block Check Validation hebdo R\u00e9tro Am\u00e9lioration continue Suivi Qualit\u00e9 & Pr\u00e9vention de la charge Cellule p\u00e9dagogique Mentors + ing\u00e9nierie p\u00e9dagogique Squads apprenants Check quotidien",
+    "source": "chapters/tech_01_methodology"
+  },
+  {
+    "id": "tech_01_methodology_chunk_3",
+    "text": "Mentors r\u00e9f\u00e9rents Coaching cibl\u00e9 Escalade support bien-\u00eatre",
+    "source": "chapters/tech_01_methodology"
+  },
+  {
+    "id": "tech_01_methodology_en_chunk_1",
+    "text": "Method AI-augmented active pedagogy Peer-learning, flipped classroom, and AI assistance to maintain pace without losing rigor. Teaching principles Peer-learning Pairing, cross-reviews, short design reviews. Flipped classroom Pre-reading, live labs for application, live time for blockers only. AI assistance Compare AI proposals, justify choices, validate with tests; human review required. Weekly cadence (Skill Mirror & Block Check) Monday Deep Tech Pair programming Squad sync Objectives Tuesday",
+    "source": "chapters/tech_01_methodology_en"
+  },
+  {
+    "id": "tech_01_methodology_en_chunk_2",
+    "text": "Labs Build & tests PO Sync Acceptance Wednesday Office hour Mentor Q&A Mentor 1:1 Unblock Thursday Skill Mirror Peer review Friday Block Check Weekly validation Retro Continuous improvement Quality & wellbeing guardrails Pedagogy cell Mentors + learning engineering Student squads Daily check Lead mentors Coaching Escalation / wellbeing support",
+    "source": "chapters/tech_01_methodology_en"
+  },
+  {
+    "id": "tech_02_syllabus_chunk_1",
+    "text": "Lecture du parcours : Phases vs Niveaux Ing\u00e9nierie = 16 semaines : W01\u2013W16. Phases = Hardening (W01\u2013W04), Building (W05\u2013W10), Security & Audit (W11\u2013W14), Capstone (W15\u2013W16). Niveaux = N1 (W01\u2013W04), N2 (W05\u2013W10), N3 (W11\u2013W16). Il n\u2019existe aucune semaine au-del\u00e0 de W16 dans ce parcours. PARCOURS D'ING\u00c9NIERIE : PLAN CANONIQUE Un r\u00e9cit unique, sans doublons : Sprint 0 optionnel, Piscine P01\u2192P04 (4 semaines), puis un parcours d\u2019ing\u00e9nierie W01\u2192W16 d\u00e9coup\u00e9 en Hardening, Building, Security & Audit +",
+    "source": "chapters/tech_02_syllabus"
+  },
+  {
+    "id": "tech_02_syllabus_chunk_2",
+    "text": "Capstone. Sprint 0 Optionnel \u2022 1 semaine Phase 0 \u2014 Piscine P01 \u2192 P04 \u2022 4 semaines Parcours d\u2019ing\u00e9nierie W01 \u2192 W16 \u2022 16 semaines Phase 1 \u2014 Hardening W01 \u2192 W04 (4 semaines) Phase 2 \u2014 Building W05 \u2192 W10 (6 semaines) Phase 3 \u2014 Security & Audit + Capstone W11 \u2192 W16 (6 semaines) Niveaux (p\u00e9dagogiques, pas des dur\u00e9es) N1 \u00b7 Fondamentaux (Foundations, Solana N1, Security Labs N1) N2 \u00b7 Interm\u00e9diaire (Solana N2, Token/CPI N2, Security Labs N2) N3 \u00b7 Avanc\u00e9/Capstone (Solana N3, hardening final, audit report,",
+    "source": "chapters/tech_02_syllabus"
+  },
+  {
+    "id": "tech_02_syllabus_chunk_3",
+    "text": "demo) Semaine Niveau Focus Livrable Pages associ\u00e9es P01 N1 Base CS, Linux, Git Shell simplifi\u00e9 Piscine P02 N1 Algorithmique & structures Katas algorithmiques Piscine P03 N1 R\u00e9silience & pair programming Exos pair programming Piscine P04 N1 Rust bases + CLI Mini CLI Rust Piscine W01 N1 Foundations, Rust utile, RPC CLI RPC tech_06_foundations, tech_06a_solana_n1 W02 N1 Account Model, cl\u00e9s, PDAs (intro) Cartographie comptes tech_06_foundations, tech_06a_solana_n1 W03 N1 Ownership Rust, tests",
+    "source": "chapters/tech_02_syllabus"
+  },
+  {
+    "id": "tech_02_syllabus_chunk_4",
+    "text": "bas-niveau Tests unitaires Rust tech_06_foundations, tech_06a_solana_n1 W04 N1 Tooling Solana CLI + explorers Guide CLI + scripts tech_06_foundations, tech_06a_solana_n1 W05 N2 Anchor N1 : structure programme Counter Anchor tech_06a_solana_n1 W06 N2 Anchor N2 : IDL, erreurs, comptes IDL propre + mapping comptes tech_06b_solana_n2 W07 N2 Patterns comptes / PDAs Checklist PDAs tech_06c_solana_n3 W08 N2 Tests TypeScript (N3) Suite de tests TS tech_06j_anchor_n3 W09 N2 Tokens / CPI hub (N1) ATA +",
+    "source": "chapters/tech_02_syllabus"
+  },
+  {
+    "id": "tech_02_syllabus_chunk_5",
+    "text": "mint + transfert tech_06e1_tokens_and_cpi_n1 W10 N2 Tokens / CPI hub (N2) Token-2022 + CPI safe tech_06e2_tokens_and_cpi_n2 W11 N3 AMM hub : invariants Spec invariants tech_06f_build_an_amm W12 N3 AMM hub : fees & swaps Impl\u00e9mentation swaps tech_06f2_build_an_amm_n2 W13 N3 Security Labs hub Checklist s\u00e9curit\u00e9 tech_06d_security_labs W14 N3 Security Labs N1 Exos N1 tech_06d1_security_labs_n1 W15 N3 Security Labs N2 Exos N2 tech_06d2_security_labs_n2 W16 N3 Capstone + audit + demo Audit report +",
+    "source": "chapters/tech_02_syllabus"
+  },
+  {
+    "id": "tech_02_syllabus_chunk_6",
+    "text": "demo day tech_capstones",
+    "source": "chapters/tech_02_syllabus"
+  },
+  {
+    "id": "tech_02_syllabus_en_chunk_1",
+    "text": "How to read the program: Phases vs Levels Engineering = 16 weeks: W01\u2013W16. Phases = Hardening (W01\u2013W04), Building (W05\u2013W10), Security & Audit (W11\u2013W14), Capstone (W15\u2013W16). Levels = N1 (W01\u2013W04), N2 (W05\u2013W10), N3 (W11\u2013W16). There is no week beyond W16 in this program. ENGINEERING TRACK: CANONICAL PLAN One single storyline: optional Sprint 0, Pool P01\u2192P04 (4 weeks), then the engineering track W01\u2192W16 split into Hardening, Building, Security & Audit + Capstone. Sprint 0 Optional \u2022 1 week Phase 0",
+    "source": "chapters/tech_02_syllabus_en"
+  },
+  {
+    "id": "tech_02_syllabus_en_chunk_2",
+    "text": "\u2014 Pool P01 \u2192 P04 \u2022 4 weeks Engineering track W01 \u2192 W16 \u2022 16 weeks Phase 1 \u2014 Hardening W01 \u2192 W04 (4 weeks) Phase 2 \u2014 Building W05 \u2192 W10 (6 weeks) Phase 3 \u2014 Security & Audit + Capstone W11 \u2192 W16 (6 weeks) Levels (pedagogical, not durations) N1 \u00b7 Fundamentals (Foundations, Solana N1, Security Labs N1) N2 \u00b7 Intermediate (Solana N2, Token/CPI N2, Security Labs N2) N3 \u00b7 Advanced/Capstone (Solana N3, final hardening, audit report, demo) Week Level Focus Deliverable Linked pages P01 N1 CS basics, Linux,",
+    "source": "chapters/tech_02_syllabus_en"
+  },
+  {
+    "id": "tech_02_syllabus_en_chunk_3",
+    "text": "Git Simplified shell Pool P02 N1 Algorithms & structures Algorithmic katas Pool P03 N1 Resilience & pair programming Pair programming drills Pool P04 N1 Rust bases + CLI Mini Rust CLI Pool W01 N1 Foundations, practical Rust, RPC RPC CLI tech_06_foundations, tech_06a_solana_n1 W02 N1 Account model, keys, PDAs (intro) Account map tech_06_foundations, tech_06a_solana_n1 W03 N1 Rust ownership, low-level tests Rust unit tests tech_06_foundations, tech_06a_solana_n1 W04 N1 Tooling Solana CLI +",
+    "source": "chapters/tech_02_syllabus_en"
+  },
+  {
+    "id": "tech_02_syllabus_en_chunk_4",
+    "text": "explorers CLI guide + scripts tech_06_foundations, tech_06a_solana_n1 W05 N2 Anchor N1: program layout Anchor counter tech_06a_solana_n1 W06 N2 Anchor N2: IDL, errors, accounts Clean IDL + account mapping tech_06b_solana_n2 W07 N2 Account / PDA patterns PDA checklist tech_06c_solana_n3 W08 N2 TypeScript tests (N3) TS test suite tech_06j_anchor_n3 W09 N2 Tokens / CPI hub (N1) ATA + mint + transfer tech_06e1_tokens_and_cpi_n1 W10 N2 Tokens / CPI hub (N2) Token-2022 + CPI safety",
+    "source": "chapters/tech_02_syllabus_en"
+  },
+  {
+    "id": "tech_02_syllabus_en_chunk_5",
+    "text": "tech_06e2_tokens_and_cpi_n2 W11 N3 AMM hub: invariants Invariants spec tech_06f_build_an_amm W12 N3 AMM hub: fees & swaps Swap implementation tech_06f2_build_an_amm_n2 W13 N3 Security Labs hub Security checklist tech_06d_security_labs W14 N3 Security Labs N1 N1 drills tech_06d1_security_labs_n1 W15 N3 Security Labs N2 N2 drills tech_06d2_security_labs_n2 W16 N3 Capstone + audit + demo Audit report + demo day tech_capstones",
+    "source": "chapters/tech_02_syllabus_en"
+  },
+  {
+    "id": "tech_03_stack_chunk_1",
+    "text": "Stack Stack Technique & Outils Environnement \"copilote\" pr\u00eat pour le d\u00e9veloppement Web3 : poste local, IA, pipelines CI/CD et instrumentation. Stack de D\u00e9veloppement Local Env OS Linux (Ubuntu) / macOS Terminal Alacritty + Tmux + Starship IDE VSCode (profil d\u00e9di\u00e9 Web3) Chain Stack Solana Rust 1.75+, Anchor 0.29+ EVM Foundry (Forge, Cast, Anvil) Indexing The Graph / Helius Matrice Outils IA Usage Outil valid\u00e9 Politique d'usage Coding Assistant GitHub Copilot Autoris\u00e9 pour boilerplate et",
+    "source": "chapters/tech_03_stack"
+  },
+  {
+    "id": "tech_03_stack_chunk_2",
+    "text": "g\u00e9n\u00e9ration de tests. Docs Search Perplexity / Phind Recommand\u00e9 pour la recherche contextuelle. Review CodeRabbit Pr\u00e9-analyse avant revue humaine obligatoire. Diagrams Mermaid.js Obligatoire diagrammes as code pour la documentation. Pipeline CI/CD de base Lint cargo clippy Format cargo fmt Audit cargo audit Tests cargo test Chaque repo de projet inclut ce workflow dans .github/workflows/ci.yml .",
+    "source": "chapters/tech_03_stack"
+  },
+  {
+    "id": "tech_03_stack_en_chunk_1",
+    "text": "Stack Technical Stack & Tooling A \u201ccopilot-ready\u201d environment for Web3 development: local workstation, AI helpers, CI/CD pipelines and instrumentation. Developer Stack Local Env OS Linux (Ubuntu) / macOS Terminal Alacritty + Tmux + Starship IDE VSCode (Web3 profile) Chain Stack Solana Rust 1.75+, Anchor 0.29+ EVM Foundry (Forge, Cast, Anvil) Indexing The Graph / Helius AI Tooling Matrix Usage Approved tool Usage policy Coding Assistant GitHub Copilot Allowed for boilerplate and tests",
+    "source": "chapters/tech_03_stack_en"
+  },
+  {
+    "id": "tech_03_stack_en_chunk_2",
+    "text": "generation. Docs Search Perplexity / Phind Recommended for contextual research. Review CodeRabbit Pre-analysis human review still required. Diagrams Mermaid.js Mandatory diagrams as code for docs. Baseline CI/CD Pipeline Lint cargo clippy Format cargo fmt Audit cargo audit Tests cargo test Every project repo includes this workflow in .github/workflows/ci.yml .",
+    "source": "chapters/tech_03_stack_en"
+  },
+  {
+    "id": "tech_04_pedagogy_guide_chunk_1",
+    "text": "Guide Guide du Formateur Cadre de conduite pour les formateurs et mentors : posture, usage des outils IA et crit\u00e8res d'\u00e9valuation technique. Mentorat vs Cours magistral Ce que l'on privil\u00e9gie Coaching live sur des cas r\u00e9els, pair-debugging, relectures cibl\u00e9es. Questions guid\u00e9es plut\u00f4t que solutions directes pour pr\u00e9server l'autonomie. D\u00e9finition claire des crit\u00e8res de Done (tests, docs, perf, s\u00e9curit\u00e9). \u00c0 \u00e9viter Slides longues sans pratique. Corrections non reproductibles ou sans tests. Oublier",
+    "source": "chapters/tech_04_pedagogy_guide"
+  },
+  {
+    "id": "tech_04_pedagogy_guide_chunk_2",
+    "text": "l'accessibilit\u00e9 (UI), la s\u00e9curit\u00e9 (backend) ou la tra\u00e7abilit\u00e9. Utilisation des outils IA en classe Pr\u00e9paration Prompt d'amor\u00e7age partag\u00e9, exemples attendus, limites explicites (pas de copie de code critique sans revue). Ex\u00e9cution Comparaison de 2-3 propositions IA, justification des choix, validation par tests automatis\u00e9s. Tra\u00e7abilit\u00e9 Mention des assistants utilis\u00e9s dans les PR, conservation des prompts pertinents dans la documentation de sprint. Crit\u00e8res d'\u00e9valuation technique Axe Attendus",
+    "source": "chapters/tech_04_pedagogy_guide"
+  },
+  {
+    "id": "tech_04_pedagogy_guide_chunk_3",
+    "text": "Check Code & Tests Tests unitaires + n\u00e9gatifs, couverture des invariants, CI verte. OK / \u00c0 compl\u00e9ter S\u00e9curit\u00e9 Threat model succinct, checklist de s\u00e9curit\u00e9 appliqu\u00e9e, pas de secrets en dur. OK / \u00c0 compl\u00e9ter Observabilit\u00e9 Logs structur\u00e9s, m\u00e9triques cl\u00e9s, plan de rollback document\u00e9. OK / \u00c0 compl\u00e9ter UX & Accessibilit\u00e9 Navigation clavier, r\u00f4les ARIA, erreurs g\u00e9r\u00e9es et affich\u00e9es. OK / \u00c0 compl\u00e9ter",
+    "source": "chapters/tech_04_pedagogy_guide"
+  },
+  {
+    "id": "tech_04_pedagogy_guide_en_chunk_1",
+    "text": "Guide Trainer Guide Conduct framework for trainers and mentors: posture, AI tooling usage, and technical grading criteria. Mentoring vs Lecture What we favor Live coaching on real cases, pair-debugging, targeted reviews. Guided questioning instead of giving answers to preserve autonomy. Clear Definition of Done (tests, docs, perf, security). To avoid Long slide decks without practice. Unreproducible fixes or missing tests. Ignoring accessibility (UI), security (backend), or traceability. Using",
+    "source": "chapters/tech_04_pedagogy_guide_en"
+  },
+  {
+    "id": "tech_04_pedagogy_guide_en_chunk_2",
+    "text": "AI tools in class Preparation Shared starter prompt, expected examples, explicit limits (no copy of critical code without review). Execution Compare 2-3 AI proposals, justify choices, validate via automated tests. Traceability Mention assistants in PRs, keep key prompts in sprint documentation. Technical grading criteria Axis Expectations Check Code & Tests Unit + negative tests, invariant coverage, green CI. OK / To improve Security Short threat model, applied security checklist, no hardcoded",
+    "source": "chapters/tech_04_pedagogy_guide_en"
+  },
+  {
+    "id": "tech_04_pedagogy_guide_en_chunk_3",
+    "text": "secrets. OK / To improve Observability Structured logs, key metrics, documented rollback plan. OK / To improve UX & Accessibility Keyboard nav, ARIA roles, handled and displayed errors. OK / To improve",
+    "source": "chapters/tech_04_pedagogy_guide_en"
+  },
+  {
+    "id": "tech_05_soft_skills_chunk_1",
+    "text": "Soft Soft Skills & Mindset Pro Socle W01\u2192W04 (N1) et continuum W05\u2192W16. Objectif : communication technique, rituels d\u2019\u00e9quipe, posture pro, incidents et audit report. Timeline (W01 \u2192 W04) Semaine Objectif soft principal Rituel d\u2019\u00e9quipe Preuve / livrable W01 (N1) Communication technique Stand-up + sync asynchrone README, ADR, hygi\u00e8ne issues W02 (N1) Cadrage / scoping Roleplay client/ing\u00e9 SOW simulation & cadrage W03 (N1) Process & rituels R\u00e9tro + board partag\u00e9 Board + r\u00e9tro structur\u00e9e W04 (N1)",
+    "source": "chapters/tech_05_soft_skills"
+  },
+  {
+    "id": "tech_05_soft_skills_chunk_2",
+    "text": "Leadership & pitch Pitch interne Pitch + d\u00e9mo interne W05 (N2) Code review & feedback CR hebdo pair-programming Commentaires actionnables (diff) W06 (N2) Code review & feedback Checklists CR PR revue avec checklist W07 (N2) Alignement produit/tech Sprint review Synth\u00e8se d\u00e9cisionnelle W08 (N2) Animation rituels Facilitation r\u00e9tro Compte rendu de r\u00e9tro W09 (N2) Communication risques Point risques hebdo Log risques + plans d\u2019action W10 (N2) Stakeholder updates Weekly update Note de synth\u00e8se hebdo",
+    "source": "chapters/tech_05_soft_skills"
+  },
+  {
+    "id": "tech_05_soft_skills_chunk_3",
+    "text": "W11 (N3) Incidents / post-mortem Revue incident Post-mortem r\u00e9dig\u00e9 W12 (N3) Audit report (r\u00e9daction) Pair review audit Section rapport audit W13 (N3) Communication incident Simulation incident Template incident & alertes W14 (N3) Audit report (finalisation) Revue crois\u00e9e Rapport audit consolid\u00e9 W15 (N3) Storytelling capstone Pr\u00e9paration demo Deck + script demo W16 (N3) Demo finale & QA R\u00e9p\u00e9tition g\u00e9n\u00e9rale Demo finale + audit report complet Rubrique d'\u00e9valuation \u00c9valuation professionnelle bas\u00e9e",
+    "source": "chapters/tech_05_soft_skills"
+  },
+  {
+    "id": "tech_05_soft_skills_chunk_4",
+    "text": "sur des preuves tangibles, pas sur la participation. Objectif Pro Qualit\u00e9 livrables & posture Axe Poids Preuves attendues Comm. Tech 30% Documentation claire, story de d\u00e9cision, synth\u00e8se risques. Collaboration 30% D\u00e9bloque l\u2019\u00e9quipe, feedback actionable, communication async. Professionnalisme 40% Deadlines tenues, alertes en amont, backups pr\u00eats.",
+    "source": "chapters/tech_05_soft_skills"
+  },
+  {
+    "id": "tech_05_soft_skills_en_chunk_1",
+    "text": "Soft Soft Skills & Pro Mindset Foundation W01\u2192W04 (N1) and continuum W05\u2192W16. Focus: technical communication, team rituals, professional posture, incidents and audit report. Timeline (W01 \u2192 W04) Week Main soft goal Team ritual Proof / deliverable W01 (N1) Technical communication Stand-up + async sync README, ADR, issue hygiene W02 (N1) Scoping Client/engineer roleplay SOW simulation & scoping W03 (N1) Process & rituals Retro + shared board Board + structured retro W04 (N1) Leadership & pitch",
+    "source": "chapters/tech_05_soft_skills_en"
+  },
+  {
+    "id": "tech_05_soft_skills_en_chunk_2",
+    "text": "Internal pitch Pitch + internal demo W05 (N2) Code review & feedback Weekly PR review Actionable comments (diff) W06 (N2) Code review & feedback Checklists CR PR reviewed with checklist W07 (N2) Product/tech alignment Sprint review Decision log W08 (N2) Ritual facilitation Retro facilitation Retro minutes W09 (N2) Risk communication Weekly risk point Risk log + actions W10 (N2) Stakeholder updates Weekly update Weekly summary note W11 (N3) Incidents / post-mortem Incident review Written",
+    "source": "chapters/tech_05_soft_skills_en"
+  },
+  {
+    "id": "tech_05_soft_skills_en_chunk_3",
+    "text": "post-mortem W12 (N3) Audit report (writing) Audit peer review Audit report section W13 (N3) Incident communication Incident simulation Incident template & alerts W14 (N3) Audit report (finalization) Cross review Consolidated audit report W15 (N3) Capstone storytelling Demo prep Deck + demo script W16 (N3) Final demo & QA Full rehearsal Final demo + complete audit report Assessment rubric Professional assessment based on tangible evidence, not attendance. Pro Target Delivery quality & posture",
+    "source": "chapters/tech_05_soft_skills_en"
+  },
+  {
+    "id": "tech_05_soft_skills_en_chunk_4",
+    "text": "Axis Weight Expected evidence Tech Comm 30% Clear docs, decision log, risk summary. Collaboration 30% Unblocks team, actionable feedback, async communication. Professionalism 40% Deadlines met, early warnings, backups ready.",
+    "source": "chapters/tech_05_soft_skills_en"
+  },
+  {
+    "id": "tech_06_foundations_chunk_1",
+    "text": "01 Foundations Th\u00e9orie Solana (Avant Anchor) Cette page installe le mod\u00e8le mental Solana . L\u2019objectif est de comprendre ce qui se passe r\u00e9ellement dans une instruction : quels comptes sont pass\u00e9s, avec quels droits (signer/writable), quelle donn\u00e9e est lue/\u00e9crite, et comment un programme peut d\u00e9river une adresse (PDA) et appeler un autre programme (CPI). Pr\u00e9-requis Notions de base : hash, signature, s\u00e9rialisation. Rust minimal (lire types, Result/Option). Pas besoin d'Anchor. Objectifs",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_chunk_2",
+    "text": "Op\u00e9rationnels 1. Expliquer l'Account Model (owner, data, lamports). 2. Lire une Tx : instruction, accounts metas, signer/writable. 3. Ma\u00eetriser les PDAs (seeds, bump, authority). 4. Comprendre les CPIs (invoke vs invoke_signed, security). 5. Mod\u00e8le Mental SPL Token (Mint, Account, Authority). 01 Accounts : Structure & Invariants Owner Le Programme ID qui contr\u00f4le le compte. Seul lui peut modifier les Data ou d\u00e9biter les Lamports. Data Tableau d'octets brut (`Vec `). Le programme d\u00e9finit la",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_chunk_3",
+    "text": "structure (Borsh, etc). Lamports Solde du compte. Paye le loyer (Rent). Si 0, le compte est purg\u00e9. Mutability R\u00e8gle d'or : Un compte pass\u00e9 en lecture seule ne PEUT PAS \u00eatre modifi\u00e9. AccountInfo Struct key: Pubkey is_signer: bool is_writable: bool lamports: Rc<RefCell<&u64>> data: Rc<RefCell<&[u8]>> owner: Pubkey Exercice Papier (Crucial) On vous donne une instruction et une liste de comptes. Indiquez pour chaque compte : signer ? et writable ? Justifiez en une phrase. (Ex: \"Payeur de frais =",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_chunk_4",
+    "text": "Signer + Writable\"). 02 Transaction \u2192 Instruction Une transaction est une enveloppe atomique. Elle contient un tableau d'Instructions. La s\u00e9curit\u00e9 du programme d\u00e9pend enti\u00e8rement de la validation manuelle des comptes re\u00e7us. Rien n'est garanti par d\u00e9faut. Program ID Qui ex\u00e9cute ? Accounts (Metas) Qui est impliqu\u00e9 ? Instruction Data Quoi faire ? (Arguments) 03 PDA : Program Derived Address Adresse D\u00e9terministe Pas de cl\u00e9 priv\u00e9e. D\u00e9riv\u00e9e via `hash(seeds, program_id)`. Address as Authority Le",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_chunk_5",
+    "text": "programme peut \"signer\" pour cette adresse via `invoke_signed`. Seeds + Bump = Off-Curve Address Exercice : Design de Seeds Proposez une convention de seeds stable et sans collision pour : 1. Un \"Vault\" par utilisateur. 2. Un \"Vault\" par paire (User, TokenMint). 04 CPI : Cross-Program Invocation invoke Appel standard. Le programme d\u00e9l\u00e8gue ses droits de signature re\u00e7us. Program A --(sign A_user)--> Program B invoke_signed Magie PDA. Le runtime v\u00e9rifie les seeds et injecte la signature du PDA.",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_chunk_6",
+    "text": "Program A --(sign PDA)--> Program B \u26a0\ufe0f RISQUE : Toujours whitelister le Program ID cible + valider les comptes pass\u00e9s. 05 SPL Token : Mental Model MINT Metadata, Supply Token Account Solde, Owner Wallet Signer (Authority) Mint Authority Qui a le droit d'imprimer des billets ? ATA (Associated Token Account) Adresse d\u00e9riv\u00e9e standard : PDA(Wallet, Mint). Livrable Minimal (Preuve) Fiche \"Mental Model\" Une page r\u00e9sumant : Accounts / Ix / PDA / CPI / SPL. 3 Exercices Corrig\u00e9s Metas signer/writable +",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_chunk_7",
+    "text": "Seeds PDA + CPI Threat Model.",
+    "source": "chapters/tech_06_foundations"
+  },
+  {
+    "id": "tech_06_foundations_en_chunk_1",
+    "text": "01 Foundations Solana Theory (Pre-Anchor) This page establishes the **Solana mental model**. The goal is to understand what really happens inside an instruction: which accounts are passed, with what privileges (signer/writable), what data is read/written, and how a program can derive an address (PDA) and call another program (CPI). Prerequisites Basic concepts: hash, signature, serialization. Minimal Rust (reading types, Result/Option). No Anchor needed yet. Operational Objectives 1. Explain",
+    "source": "chapters/tech_06_foundations_en"
+  },
+  {
+    "id": "tech_06_foundations_en_chunk_2",
+    "text": "the Account Model (owner, data, lamports). 2. Read a Tx: instruction, accounts metas, signer/writable. 3. Master PDAs (seeds, bump, authority). 4. Understand CPIs (invoke vs invoke_signed, security). 5. SPL Token Mental Model (Mint, Account, Authority). 01 Accounts: Structure & Invariants Owner The Program ID that controls the account. Only it can modify Data or deduct Lamports. Data Raw byte array (`Vec `). The program defines the structure (Borsh, etc). Lamports Account balance. Pays for",
+    "source": "chapters/tech_06_foundations_en"
+  },
+  {
+    "id": "tech_06_foundations_en_chunk_3",
+    "text": "storage (Rent). If 0, the account is purged. Mutability Golden Rule: An account passed as Read-Only CANNOT be modified. AccountInfo Struct key: Pubkey is_signer: bool is_writable: bool lamports: Rc<RefCell<&u64>> data: Rc<RefCell<&[u8]>> owner: Pubkey Paper Exercise (Crucial) You are given an instruction and a list of accounts. For each account, indicate: signer? and writable? Justify in one sentence. (Ex: \"Fee payer = Signer + Writable\"). 02 Transaction \u2192 Instruction A transaction is an atomic",
+    "source": "chapters/tech_06_foundations_en"
+  },
+  {
+    "id": "tech_06_foundations_en_chunk_4",
+    "text": "envelope. It contains an array of Instructions. Program security depends entirely on the manual validation of the accounts received. Nothing is guaranteed by default. Program ID Who executes? Accounts (Metas) Who is involved? Instruction Data What to do? (Arguments) 03 PDA: Program Derived Address Deterministic Address No private key. Derived via `hash(seeds, program_id)`. Address as Authority The program can \"sign\" for this address via `invoke_signed`. Seeds + Bump = Off-Curve Address Exercise:",
+    "source": "chapters/tech_06_foundations_en"
+  },
+  {
+    "id": "tech_06_foundations_en_chunk_5",
+    "text": "Seed Design Propose a stable, collision-free seed convention for: 1. One \"Vault\" per user. 2. One \"Vault\" per pair (User, TokenMint). 04 CPI: Cross-Program Invocation invoke Standard call. The program delegates its signature privileges. Program A --(sign A_user)--> Program B invoke_signed PDA Magic. Runtime checks seeds and injects PDA signature. Program A --(sign PDA)--> Program B \u26a0\ufe0f RISK: Always whitelist the target Program ID + validate passed accounts. 05 SPL Token: Mental Model MINT",
+    "source": "chapters/tech_06_foundations_en"
+  },
+  {
+    "id": "tech_06_foundations_en_chunk_6",
+    "text": "Metadata, Supply Token Account Balance, Owner Wallet Signer (Authority) Mint Authority Who is allowed to print money? ATA (Associated Token Account) Standard derived address: PDA(Wallet, Mint). Minimal Deliverable (Proof) \"Mental Model\" Sheet A one-page summary: Accounts / Ix / PDA / CPI / SPL. 3 Solved Exercises Metas signer/writable + Seeds PDA + CPI Threat Model.",
+    "source": "chapters/tech_06_foundations_en"
+  },
+  {
+    "id": "tech_06_solana_hub_chunk_1",
+    "text": "TRACK A Solana (Rust) : Parcours Builder Ce track forme des builders Solana capables de concevoir, coder, tester et auditer des programmes on-chain. La progression suit une logique \"senior-friendly\" : d\u2019abord le mod\u00e8le mental, puis l'efficacit\u00e9 (Anchor), la profondeur (Native), la s\u00e9curit\u00e9, et enfin l'architecture (AMM, Tokens). 1) Progression Officielle 01 Foundations Th\u00e9orie Solana & Mental Model Accounts, transactions, PDA, CPI, SPL token mental model. N1 Rust System + Tools Bas niveau &",
+    "source": "chapters/tech_06_solana_hub"
+  },
+  {
+    "id": "tech_06_solana_hub_chunk_2",
+    "text": "Outillage Rust basique cibl\u00e9 Solana, s\u00e9rialisation, logs, lecture d\u2019ex\u00e9cution. N2 Anchor Framework Counter \u2192 Patterns Premier programme complet, contraintes, PDA, CPI de base, tests TypeScript. N3 Anchor \u2192 Native Capstone & Validation Capstone Anchor complexe, puis reproduction en natif (validation manuelle & invoke_signed). 05 Security Labs Vulnerability Hunting Trouver, expliquer et corriger des vuln\u00e9rabilit\u00e9s (Anchor + Native) avec preuves par tests. 06 Tokens & CPI Standards Avanc\u00e9s SPL",
+    "source": "chapters/tech_06_solana_hub"
+  },
+  {
+    "id": "tech_06_solana_hub_chunk_3",
+    "text": "Token, Token-2022 Extensions (\u00e0 bon escient), et CPIs propres. 07 Build an AMM Protocol Engineering AMM minimal \u2192 features avanc\u00e9es (fees, LP, slippage, compute budget en option). 08 Validator/Infra Ouverture Infrastructure Culture r\u00e9seau, ex\u00e9cution, RPC, performance et bonnes pratiques. N1 Anchor Framework Intro & Structure Workspace, IDL, Tests TypeScript et philosophie Anchor. 2) Objectifs Finaux Expliquer le mod\u00e8le d\u2019accounts et la m\u00e9canique transaction/instruction (Mental Model). \u00c9crire des",
+    "source": "chapters/tech_06_solana_hub"
+  },
+  {
+    "id": "tech_06_solana_hub_chunk_4",
+    "text": "programmes Anchor propres : contraintes, PDA, CPI, tests, events. Lire et raisonner sur du Native Solana (validation manuelle, invoke_signed). Identifier et corriger les vuln\u00e9rabilit\u00e9s courantes (avec preuves). Impl\u00e9menter des flows tokens et construire un AMM minimal. 3) Livrables Attendus Repo Counter Anchor basic + tests Repo Vault/Escrow PDA + CPI + Errors Capstone Anchor Protocol complet Version Native Instruction decoding Security Labs Corrections + PoCs Tokens & AMM Invariants & Tests 4)",
+    "source": "chapters/tech_06_solana_hub"
+  },
+  {
+    "id": "tech_06_solana_hub_chunk_5",
+    "text": "Scope & Limites TRONC COMMUN (Focus) Ce qui est actionnable et \u00e9valuable . \u2022 Accounts / Transactions (Theory) \u2022 Anchor Mastery (Counter \u2192 Capstone) \u2022 Native Development Fundamentals \u2022 Security Labs (Vuln hunting) \u2022 AMM Minimal & Token Flows OUVERTURES (Optionnel) Disponibles en annexes, non \"vendus\" dans le core. \u2022 Formal Methods (LTL/CTL Verification) \u2022 Interop / Cross-chain (LayerZero/Wormhole) \u2022 RWA & Compliance Deep Dive (KYC/AML) \u2022 Industrial Benchmarks (100k TPS Chaos Testing) D\u00e9marrer :",
+    "source": "chapters/tech_06_solana_hub"
+  },
+  {
+    "id": "tech_06_solana_hub_chunk_6",
+    "text": "Foundations",
+    "source": "chapters/tech_06_solana_hub"
+  },
+  {
+    "id": "tech_06_solana_hub_en_chunk_1",
+    "text": "A Solana Track (Rust) From fundamentals to capstone This hub provides a clear progression for the Solana track: foundations first, then Anchor and security patterns, then DeFi capstones and advanced tooling. Go to Lv1 (Fundamentals) Go to Lv2 (Anchor & Security) Go to Lv3 (Advanced DeFi) Recommended sequence Foundations \u2014 accounts, PDAs, transactions, CPI mental model Lv1 \u2014 Rust basics + tooling Lv2 \u2014 Anchor counter \u2192 patterns \u2192 mini-capstone Lv3 \u2014 DeFi capstone \u2192 prep for native & security",
+    "source": "chapters/tech_06_solana_hub_en"
+  },
+  {
+    "id": "tech_06_solana_hub_en_chunk_2",
+    "text": "labs",
+    "source": "chapters/tech_06_solana_hub_en"
+  },
+  {
+    "id": "tech_06a_solana_n1_chunk_1",
+    "text": "N1 Rust & Outils L'essentiel pour Solana Le niveau N1 ne vise pas \"Rust expert\". Il vise un Rust pratique : assez solide pour comprendre Anchor, \u00e9crire des types d\u2019\u00e9tat, s\u00e9rialiser proprement, et d\u00e9boguer une ex\u00e9cution on-chain. Pr\u00e9-requis Foundations : Accounts, PDA, CPI (Obligatoire). Base Prog : Fonctions, Types, Conditions. Objectifs Op\u00e9rationnels 1. \u00c9crire du Rust basique correct (Ownership, Result). 2. Comprendre la s\u00e9rialisation (Borsh) et les Layouts. 3. Lire des logs & diagnostiquer",
+    "source": "chapters/tech_06a_solana_n1"
+  },
+  {
+    "id": "tech_06a_solana_n1_chunk_2",
+    "text": "(Owner, Signer). 4. Maitriser la CLI, la simulation et les tests locaux. 01 Rust \"Core\" (Cibl\u00e9 Solana) Ownership / Borrowing Quand cloner ? Quand passer une r\u00e9f\u00e9rence `&` ? Crucial pour la performance. Option / Result Pas d'exceptions. Propagation explicite avec `?`. Gestion propre des erreurs. Struct / Enum Mod\u00e9liser les instructions (Enum) et l'\u00e9tat des comptes (Struct). exercice_kata.rs Instruction Parser \u00c9crire un parser : 1. Lire le 1er byte (Variant) 2. D\u00e9s\u00e9rialiser le reste (Payload) 3.",
+    "source": "chapters/tech_06a_solana_n1"
+  },
+  {
+    "id": "tech_06a_solana_n1_chunk_3",
+    "text": "Retourner Err(InvalidInstruction) si fail. fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult { /* implementation */ } 02 S\u00e9rialisation & Layout Borsh Canonical. D\u00e9terministe. Strict. Le standard Solana. Versioning Pr\u00e9voir l'\u00e9volution. Ne jamais casser le layout existant. Taille (Space) Calcul pr\u00e9cis (byte par byte). `realloc` co\u00fbte cher en Compute Units. Exercice : VaultState D\u00e9finir une struct VaultState (owner, bump, mint, balance).",
+    "source": "chapters/tech_06a_solana_n1"
+  },
+  {
+    "id": "tech_06a_solana_n1_chunk_4",
+    "text": "Calculer sa taille exacte en bytes. Ajouter un champ version: u8 au d\u00e9but. 03 Debugging & Outillage La Caisse \u00e0 Outils solana-test-validator Votre blockchain locale. solana logs Le st\u00e9thoscope. Voir les `msg!`. Simulate Transaction Tester sans payer. Diagnostique Error 0x0 ? Souvent un Panic! ou un Unwrap sur None. Account Not Writable ? Vous avez oubli\u00e9 `is_signer` ou `is_writable` dans les metas. Seeds Mismatch ? Le PDA d\u00e9riv\u00e9 ne correspond pas \u00e0 l'adresse pass\u00e9e. Livrables (Preuves)",
+    "source": "chapters/tech_06a_solana_n1"
+  },
+  {
+    "id": "tech_06a_solana_n1_chunk_5",
+    "text": "Mini-Projet Rust Une instruction parser + \u00e9tat s\u00e9rialis\u00e9 (hors Anchor) + Tests Unitaires. Review Note \"Debugging Checklist\" : 10 erreurs fr\u00e9quentes + correctifs.",
+    "source": "chapters/tech_06a_solana_n1"
+  },
+  {
+    "id": "tech_06a_solana_n1_en_chunk_1",
+    "text": "Month 1 RUST & MENTAL MODEL Solana is not EVM. Here, memory management is not abstract. Before coding smart contracts, you must understand how the machine works. This module is a \"Bootcamp within a Bootcamp\" to master the Borrow Checker and the Account-Centric architecture. 160 Hours Pure Rust MEMORY MODEL STACK Fixed Size Fast Access LIFO HEAP Dynamic Size Smart Pointers -> Box<T> W01 Thinking in Rust Algorithms & Types Immutability by Default: Why Rust refuses `let x = 5; x = 6;`. Type",
+    "source": "chapters/tech_06a_solana_n1_en"
+  },
+  {
+    "id": "tech_06a_solana_n1_en_chunk_2",
+    "text": "System: Structs, Enums, and powerful Pattern Matching (`match`). Option & Result: Error handling without `null` or exceptions. \"90% of Solana bugs come from poor understanding of Rust types.\" W02 Conquering Memory Ownership & Borrowing The Borrow Checker: Rules of unique ownership and multiple borrowing. Lifetimes: `'a` annotations to guarantee reference validity. Traits & Generics: Static polymorphism (Zero-cost abstraction). \"If it compiles, it works. The Rust compiler is your first mentor.\"",
+    "source": "chapters/tech_06a_solana_n1_en"
+  },
+  {
+    "id": "tech_06a_solana_n1_en_chunk_3",
+    "text": "W03 Solana Theory Architecture & Cryptography Account Model: Everything is an account (Data, Executable, System). PDAs (Program Derived Addresses): Deterministic derivation off the Ed25519 curve. Runtime: Sealevel, Pipelining, and transaction parallelization. W04 Capstone N1 Project: Rust CLI Explorer Development of a Command Line Interface (CLI) tool in Rust to query the blockchain without using JS libraries. $ cargo run -- --account 8XhHa\u2026\\n > Parsing account data\u2026\\n > Owner: Token Program >",
+    "source": "chapters/tech_06a_solana_n1_en"
+  },
+  {
+    "id": "tech_06a_solana_n1_en_chunk_4",
+    "text": "Balance: 145.20 SOL Borsh Deserialization JSON RPC",
+    "source": "chapters/tech_06a_solana_n1_en"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_1",
+    "text": "Track A \u00b7 Solana N2 Anchor N2 \u2014 Anchor : Theory \u2192 Counter \u2192 Patterns \u2192 Mini-capstone \u2192 Checklist Cette \u00e9tape est la charni\u00e8re du parcours Solana : on consolide la th\u00e9orie utile (accounts/PDAs/transactions), puis on construit un premier programme Anchor (Counter), on apprend des patterns r\u00e9utilisables, on termine par un mini-capstone et une checklist de qualit\u00e9 (tests, s\u00e9curit\u00e9, livraison). Objectif \u00catre autonome sur un programme Anchor simple : conception des comptes, PDA, contraintes, tests et",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_2",
+    "text": "d\u00e9ploiement local/devnet. Pr\u00e9-requis Rust N1 (basique), CLI Solana, environnement dev, lecture du chapitre Foundations . Livrables Programme Counter + tests Patterns appliqu\u00e9s (PDA, contraintes, erreurs) Mini-capstone + README 1) Theory (rappel utile, version \u201cdev\u201d) On ne refait pas tout Foundations. Ici, on fixe les points indispensables pour raisonner correctement en Anchor. Accounts : lecture et \u00e9criture Un programme re\u00e7oit une liste d\u2019accounts : ordre, mutabilit\u00e9, signers. En Anchor, la",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_3",
+    "text": "\u201cvalidation\u201d se fait via contraintes sur le contexte. Tu dois savoir : owner , lamports , data , rent . PDA : l\u2019outil central Seed(s) + bump \u2192 adresse d\u00e9riv\u00e9e d\u00e9terministe. R\u00e8gle d\u2019or : les seeds doivent \u00eatre explicables et audit\u00e9es (pas \u201cau hasard\u201d). Anchor : seeds = [b\"user_stats\", user.key().as_ref()] , bump , et parfois init_if_needed . Transactions, instructions, compute Instruction = programme + comptes + donn\u00e9es s\u00e9rialis\u00e9es. Une transaction peut contenir plusieurs instructions (et",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_4",
+    "text": "plusieurs programmes). Compute budget : penser \u201cco\u00fbt\u201d d\u00e8s la conception (boucles, tailles de comptes, CPI). CPI (Cross-Program Invocation) Un programme peut appeler un autre programme (Token Program, System Program\u2026). La s\u00e9curit\u00e9 d\u00e9pend des checks : qui signe ? qui poss\u00e8de le compte ? quelles seeds ? En Anchor, CPI = \u201ccontext + program + accounts\u201d (on verra un exemple en patterns). 2) Counter (le programme Anchor minimal) Objectif : construire un programme Anchor simple mais propre, avec un",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_5",
+    "text": "compte PDA, des contraintes claires et des tests. \u00c9tapes Cr\u00e9er le projet : anchor init counter D\u00e9finir le compte Counter (valeur, autorit\u00e9, bump, version). Instruction initialize : cr\u00e9e la PDA + initialise. Instruction increment : v\u00e9rifie l\u2019autorit\u00e9 + incr\u00e9mente. Tests : init, increment, cas n\u00e9gatifs (mauvaise autorit\u00e9). Design attendu PDA d\u00e9riv\u00e9e : seeds explicites (ex. [\"counter\", authority] ) Contraintes Anchor lisibles ( has_one , seeds , bump ) Version de compte pour migrations futures",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_6",
+    "text": "Tests attendus Happy path : init + N increments Fail path : mauvais signer, mauvais PDA, mauvais owner Assertions sur la data du compte (apr\u00e8s fetch) Snippet (squelette) // \u26a0\ufe0f Squelette indicatif. \u00c0 compl\u00e9ter pendant le TP. /* #[account] pub struct Counter { pub authority: Pubkey, pub value: u64, pub bump: u8, pub version: u8, } #[derive(Accounts)] pub struct Initialize < 'info> { #[account(mut)] pub authority: Signer < 'info>, #[account( init, payer = authority, space = 8 + /* size */, seeds =",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_7",
+    "text": "[b\"counter\", authority.key().as_ref()], bump )] pub counter: Account < 'info, Counter>, pub system_program: Program < 'info, System>, } */ 3) Patterns (les r\u00e9flexes Anchor qui \u00e9vitent 80% des bugs) Ici on apprend des patterns concrets, imm\u00e9diatement applicables au Counter puis au mini-capstone. Pattern A \u2014 contraintes & autorisations Utiliser has_one et des checks explicites d\u2019autorit\u00e9. \u00c9viter les \u201cautorit\u00e9s implicites\u201d (ex : signer non v\u00e9rifi\u00e9). Tests n\u00e9gatifs syst\u00e9matiques. Pattern B \u2014 PDA",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_8",
+    "text": "propre (seeds stables) Seeds stables et document\u00e9es (ex : b\"vault\" , authority , mint ). Stocker le bump dans le compte. Ne pas m\u00e9langer des seeds \u201cutiles\u201d et des seeds \u201ccosm\u00e9tiques\u201d. Pattern C \u2014 erreurs \u201cpropres\u201d D\u00e9finir un enum ErrorCode lisible. \u00c9viter les require! muets : message clair, test associ\u00e9. Documenter les invariants (m\u00eame simplement) dans le README. Pattern D \u2014 premier CPI (System/Token) Faire une CPI minimaliste (ex : cr\u00e9er un compte, transf\u00e9rer des lamports). Comprendre",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_9",
+    "text": "exactement qui signe et pourquoi. Pr\u00e9parer le terrain pour Token/CPI (chapitre suivant). 4) Mini-capstone (petit projet, vrai raisonnement) Capstone court (2\u20134h) : on assemble th\u00e9orie + patterns sur un cas r\u00e9aliste mais simple. Sujet propos\u00e9 : \u201cVault\u201d (caisse) \u00e0 PDA Un utilisateur cr\u00e9e une \u201ccaisse\u201d (PDA) et peut d\u00e9poser/retirer des lamports. Le programme enforce : (1) seule l\u2019autorit\u00e9 peut retirer ; (2) pas de retrait au-del\u00e0 du solde ; (3) seeds document\u00e9es. Fonctions create_vault deposit",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_10",
+    "text": "withdraw Contraintes PDA = seeds stables Autorit\u00e9 = signer Tests n\u00e9gatifs Bonus Events Anchor Version de compte README tr\u00e8s court 5) Checklist (qualit\u00e9 & livraison) \u00c0 la fin de N2, l\u2019objectif n\u2019est pas \u201cd\u2019avoir du code qui marche\u201d, mais d\u2019avoir du code qui tient en revue. Qualit\u00e9 README : objectifs, accounts, seeds, invariants Tests : happy + fail paths (au minimum) Erreurs : codes explicites, pas de \u201cpanic\u201d Lint/format : code homog\u00e8ne S\u00e9curit\u00e9 (niveau N2) Contr\u00f4les d\u2019autorit\u00e9 explicites Seeds",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_11",
+    "text": "document\u00e9es + bump stock\u00e9 Pas de write sur des comptes non poss\u00e9d\u00e9s Tests n\u00e9gatifs pour signer/owner/PDA Anti-buzzwords / Scope Control (Ce qu'on ne fait PAS en N2) Pour rester align\u00e9 avec la p\u00e9dagogie Odo, nous refusons explicitement la complexit\u00e9 pr\u00e9matur\u00e9e. Pas de Formal Verification (OtterSec/Soteria) : c'est pour N4+. Pas de Cross-Chain (Wormhole/LayerZero) : focus Solana natif d'abord. Pas d'optimisation pr\u00e9matur\u00e9e (bit packing extr\u00eame) : la lisibilit\u00e9 prime. Pas de macros complexes : on",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_chunk_12",
+    "text": "\u00e9crit le code boilerplate si \u00e7a aide \u00e0 comprendre.",
+    "source": "chapters/tech_06b_solana_n2"
+  },
+  {
+    "id": "tech_06b_solana_n2_en_chunk_1",
+    "text": "LEVEL 2: SMART CONTRACT DEVELOPMENT This level covers the full lifecycle of decentralized application (dApp) development. The approach combines Anchor framework for productivity and Native development study for deep technical understanding. 1. Anchor Framework Weeks 5-6 Anchor Architecture: Macros, Context, and automatic account validation. Data Management: Practical implementation of PDAs and account relationships. CPI (Cross Program Invocation): Interaction with other programs (e.g., SPL",
+    "source": "chapters/tech_06b_solana_n2_en"
+  },
+  {
+    "id": "tech_06b_solana_n2_en_chunk_2",
+    "text": "Token). Client Integration: IDL generation and Frontend connection (Web3.js). 2. Native Development Weeks 7-8 Program Entrypoint: Low-level instruction processing (`process_instruction`). Serialization: Manual data handling with Borsh. Explicit Security: Manual verification of signers and account owners. LEVEL 2 PROJECT: \"Full Stack dApp\" Creation of a complete decentralized application (e.g., Crowdfunding Protocol or simple DAO). Deliverables: Optimized Smart Contract (Anchor), unit test suite,",
+    "source": "chapters/tech_06b_solana_n2_en"
+  },
+  {
+    "id": "tech_06b_solana_n2_en_chunk_3",
+    "text": "and functional user interface connected to wallets.",
+    "source": "chapters/tech_06b_solana_n2_en"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_1",
+    "text": "N3 DeFi avanc\u00e9e : CPI, Tokens, AMM (capstone) Anchor Capstone \u2192 (pr\u00e9paration Native & Security) N3 vise \u00e0 construire une compr\u00e9hension \u201cproduit\u201d des primitives DeFi sur Solana : transferts via CPI, \u00e9tats coh\u00e9rents, contraintes, tests n\u00e9gatifs, et design d\u2019un mini-protocole. L\u2019objectif est de livrer un capstone utilisable, document\u00e9 et testable \u2014 pas de r\u00e9citer des buzzwords. Dur\u00e9e indicative 12\u201320h selon l\u2019aisance Rust/Anchor, 70% pratique + tests. Livrables Capstone AMM-like (mini), tests",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_2",
+    "text": "n\u00e9gatifs, README, audit notes. Crit\u00e8re de r\u00e9ussite CPI ma\u00eetris\u00e9es + invariants + sc\u00e9narios d\u2019\u00e9chec reproduits par tests. 1) CPI & Tokens \u2014 la plomberie DeFi Comprendre qu\u2019un transfert SPL, une mint, un burn, un freeze\u2026 sont des instructions CPI . Core building block CPI : mod\u00e8le mental On appelle un autre programme (Token Program, System Program\u2026) On passe les accounts requis explicitement Les autorit\u00e9s doivent \u00eatre correctes (signer, PDA signer, delegates) Les erreurs doivent \u00eatre",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_3",
+    "text": "reproductibles en tests (negative tests) Tokens : ce qu\u2019on veut r\u00e9ellement ma\u00eetriser Mint / Token Accounts / Associated Token Accounts (ATA) Authorities : mint authority, freeze authority, owner D\u00e9cimales & unit\u00e9s (u64) + overflow/underflow Token-2022 : extensions (\u00e0 venir dans le module tokens) Tests attendus (minimum) Transfert : happy path Transfert : mauvais owner / mauvais signer \u2192 erreur attendue Transfert : solde insuffisant \u2192 erreur attendue Constraints : comptes incomplets/incorrects \u2192",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_4",
+    "text": "erreur attendue 1) CPI & Tokens \u2014 la plomberie DeFi Comprendre qu\u2019un transfert SPL, une mint, un burn, un freezeetc. sont des instructions CPI . Core building block CPI : mod\u00e8le mental flowchart TD User([User]) -->|Sign| ProgA[MyProgram] ProgA -->|invoke_signed(seeds)| TokenProg TokenProg -->|Verify| PDA[(Vault PDA)] invoke : transmet la signature du Payer. invoke_signed : le programme signe pour ses PDAs (seeds + bump). Erreur classique: Signer privilege escalated (donner des droits \u00e0 un",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_5",
+    "text": "programme malveillant). Token-2022 : le futur standard Transfer Fees : Taxe pr\u00e9lev\u00e9e automatiquement (Royalties enforcement). Deep Hooks : Logique custom par transaction (Whitelisting dynamique). Metadata Pointer : Stockage on-chain l\u00e9ger sans Metaplex (pour les cas simples). Activit\u00e9 Flash : Choix d'extension Pour un Stablecoin Euro ? \u2192 Freeze Authority + Interest Bearing . Tests attendus (minimum) Transfert : happy path Transfert : mauvais owner / mauvais signer \u2192 erreur attendue Transfert :",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_6",
+    "text": "solde insuffisant \u2192 erreur attendue Constraints : comptes incomplets/incorrects \u2192 erreur attendue Capstone \u00c9tat (accounts) PDA PoolState (seeds/bump) Vault A / Vault B (token accounts contr\u00f4l\u00e9s) Config : fees, authority, param\u00e8tres Option : LP mint (si extension) Invariants (\u00e0 expliciter) Vaults coh\u00e9rents vs \u00e9tat Les fees ne cassent pas le mod\u00e8le Swap : pas de r\u00e9sultat \u201cgratuit\u201d Overflow/underflow impossible Edge cases (obligatoires) Swap avec z\u00e9ro / dust Slippage (min_out) Comptes ATA manquants",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_7",
+    "text": "Authority incorrecte Plan de capstone (pragmatique) Init pool : cr\u00e9er PoolState PDA + vaults A/B Deposit : d\u00e9p\u00f4t A/B vers vaults (CPI token) Swap : calcul + transfert (CPI token), respecter min_out Withdraw : retrait contr\u00f4l\u00e9 (option : share/LP) Tests : happy + n\u00e9gatifs + invariants 3) Pr\u00e9-s\u00e9curit\u00e9 : ce qu\u2019on doit d\u00e9j\u00e0 traquer Authority & ownership Une action \u201ccritique\u201d doit v\u00e9rifier l\u2019autorit\u00e9 On ne fait pas confiance au client has_one/constraint doivent \u00eatre coh\u00e9rents Math & overflow",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_chunk_8",
+    "text": "checked_add / checked_sub partout D\u00e9cimales : conversions explicites Min/Max, slippage, rounding Tests n\u00e9gatifs On doit pouvoir reproduire la faille Un test = sc\u00e9nario + expectation Les erreurs doivent \u00eatre explicites Passage recommand\u00e9 Apr\u00e8s N3, on encha\u00eene sur des Security Labs (Anchor + Native). Revenir \u00e0 N2 Aller aux Security Labs Livrable final Audit Report V1.0 Le s\u00e9same pour entrer dans l'industrie.",
+    "source": "chapters/tech_06c_solana_n3"
+  },
+  {
+    "id": "tech_06c_solana_n3_en_chunk_1",
+    "text": "LEVEL 3: ADVANCED SECURITY & AUDIT This expertise module trains in protocol security practices and code auditing. It also covers advanced standards and complex architectures required for modern DeFi protocols. 1. Offensive & Defensive Security Weeks 9-10 Attack Vectors: Missing Signer checks, Account confusion, Arbitrary CPI. Re-entrancy: Analysis of Solana vs EVM specificities. CTF (Capture The Flag): Practical exercises in vulnerability identification and exploitation. 2. Advanced Standards &",
+    "source": "chapters/tech_06c_solana_n3_en"
+  },
+  {
+    "id": "tech_06c_solana_n3_en_chunk_2",
+    "text": "Ops Weeks 11-12 Token-2022: Extensions, Transfer Fees, and programmable Hooks. State Compression (cNFTs): Using Merkle Trees for cost optimization. DeFi Architecture: Flash Loans and arbitrage mechanisms (MEV). LEVEL 3 PROJECT: \"Technical Audit Report\" Professional audit mission simulation. Mission: Analyze an existing protocol's source code, identify potential vulnerabilities (High/Medium/Low), and draft a formal audit report proposing technical fixes.",
+    "source": "chapters/tech_06c_solana_n3_en"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_1",
+    "text": "Security Labs N1 \u2014 Labs 1 \u00e0 3 Hub N2 Objectif N1 : s\u00e9curiser les fondamentaux account validation (owner, seeds, authority). Chaque lab = Buggy \u2192 Exploit (preuve en test) \u2192 Patch \u2192 Regression . 01 Missing Owner Check Un compte \u201ccible\u201d (vault/ATA/state) n\u2019est pas li\u00e9 \u00e0 l\u2019authority attendue. Sympt\u00f4me L\u2019instruction accepte un user_wallet arbitraire. Risque D\u00e9tournement de flux (paiement vers un compte non autoris\u00e9). Correctif Contraintes Anchor ( token::authority , has_one , ATA). \ud83d\udd34 Buggy (extrait)",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_2",
+    "text": "pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> { // \u26a0\ufe0f L'instruction re\u00e7oit user_wallet en param\u00e8tre sans le lier \u00e0 authority. token::transfer(ctx.accounts.into_transfer_ctx(), amount)?; Ok(()) } #[derive(Accounts)] pub struct Withdraw<'info> { #[account(mut)] pub vault: Account<'info, TokenAccount>, #[account(mut)] pub user_wallet: Account<'info, TokenAccount>, // \u26a0\ufe0f No check pub authority: Signer<'info>, pub token_program: Program<'info, Token>, } Pourquoi c\u2019est une",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_3",
+    "text": "vuln\u00e9rabilit\u00e9 ? L\u2019API accepte un compte destination non prouv\u00e9. En audit, tout compte pass\u00e9 en param\u00e8tre doit \u00eatre contraint : owner, seeds, relation avec l\u2019authority, ou d\u00e9rivation standard (ATA). Patch (Anchor constraints) #[derive(Accounts)] pub struct Withdraw<'info> { #[account( mut, token::authority = authority )] pub vault: Account<'info, TokenAccount>, #[account( mut, token::authority = authority // \u2705 destination li\u00e9e au m\u00eame authority (ou ATA attendu) )] pub user_wallet: Account<'info,",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_4",
+    "text": "TokenAccount>, pub authority: Signer<'info>, pub token_program: Program<'info, Token>, } Variante recommand\u00e9e : d\u00e9river/forcer une ATA attendue ( associated_token::authority + mint ). Preuve en test (squelette) // Objectif: prouver que l'appel \u00e9choue si user_wallet n'appartient pas \u00e0 authority. // (Test de lab local, pas d'usage hors environnement p\u00e9dagogique) it(\"rejects withdraw to a wallet not owned by authority\", async () => { // Arrange: authority A, destination B (mauvaise) // Act +",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_5",
+    "text": "Assert: expect instruction to fail (constraint violation) }); Checklist de sortie (Lab 01) Le compte destination est li\u00e9 \u00e0 l\u2019authority (ATA ou constraints). Le test \u201cmauvaise destination\u201d est rouge avant patch et vert apr\u00e8s. Le patch est minimal, lisible, et document\u00e9 (raison + invariant). 02 PDA Derivation / Seeds Spoof Un compte cens\u00e9 \u00eatre un PDA est accept\u00e9 sans v\u00e9rification stricte de ses seeds. \ud83d\udd34 Buggy (anti-pattern) #[derive(Accounts)] pub struct UpdateConfig<'info> { // \u26a0\ufe0f Compte \"config\"",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_6",
+    "text": "pass\u00e9 sans seeds/bump -> substitution possible en lab. #[account(mut)] pub config: AccountInfo<'info>, pub authority: Signer<'info>, } Indice : l\u2019utilisation de AccountInfo \u201craw\u201d + absence de seeds est un signal rouge. Vecteur d\u2019attaque (en lab) Si le programme attend un \u00e9tat global (Config/State) mais ne contraint pas l\u2019adresse attendue (PDA), un \u00e9tat alternatif peut \u00eatre fourni et influencer la logique (param\u00e8tres, fees, owners\u2026). Patch recommand\u00e9 #[derive(Accounts)] pub struct",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_7",
+    "text": "UpdateConfig<'info> { #[account( mut, seeds = [b\"config\", authority.key().as_ref()], bump )] pub config: Account<'info, Config>, pub authority: Signer<'info>, } Si les seeds sont \u201cdynamiques\u201d, documenter pr\u00e9cis\u00e9ment l\u2019invariant et tester les cas invalides. Test (squelette) it(\"rejects a config account that is not the expected PDA\", async () => { // Arrange: create a random account with same layout (lab-only) // Act: call update_config with fake account // Assert: should fail (seeds constraint)",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_8",
+    "text": "}); Checklist de sortie (Lab 02) Le compte d\u2019\u00e9tat est typ\u00e9 ( Account<T> ) ou contraint (seeds/bump). Les seeds sont stables et audit\u00e9es ; les seeds dynamiques sont test\u00e9es. Test \u201cfake PDA\u201d : rouge avant patch, vert apr\u00e8s. 03 Signer vs Authority Le payer/signer de la transaction est confondu avec l\u2019authority m\u00e9tier. \ud83d\udd34 Buggy (logique) pub fn admin_set_fee(ctx: Context<AdminSetFee>, fee_bps: u16) -> Result<()> { // \u26a0\ufe0f On suppose que \"signer\" = admin ctx.accounts.config.fee_bps = fee_bps; Ok(()) }",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_9",
+    "text": "#[derive(Accounts)] pub struct AdminSetFee<'info> { #[account(mut)] pub config: Account<'info, Config>, pub signer: Signer<'info>, // \u26a0\ufe0f pas forc\u00e9ment admin } Invariants \u00e0 poser Un r\u00f4le \u201cadmin\u201d est une propri\u00e9t\u00e9 persist\u00e9e (dans Config ) et doit \u00eatre v\u00e9rifi\u00e9 : config.admin == signer.key() ou has_one = admin . Patch (has_one / address constraint) #[derive(Accounts)] pub struct AdminSetFee<'info> { #[account(mut, has_one = admin)] pub config: Account<'info, Config>, pub admin: Signer<'info>, }",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_10",
+    "text": "Alternative : #[account(address = config.admin)] si vous stockez la cl\u00e9. Test (squelette) it(\"rejects admin action from a non-admin signer\", async () => { // Arrange: config.admin = A, signer = B // Act: admin_set_fee with signer B // Assert: should fail (has_one / address constraint) }); Checklist de sortie (Lab 03) L\u2019authority m\u00e9tier est d\u00e9finie (champ admin/role/state) et v\u00e9rifi\u00e9e. Le test \u201cnon-admin\u201d est rouge avant patch et vert apr\u00e8s. Le correctif ne d\u00e9pend pas du \u201cpayer\u201d de la",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_chunk_11",
+    "text": "transaction.",
+    "source": "chapters/tech_06d1_security_labs_n1"
+  },
+  {
+    "id": "tech_06d1_security_labs_n1_en_chunk_1",
+    "text": "Security Labs \u2014 N1 (Foundations) This level is being drafted. It will cover the first security drills for Solana builders: account ownership, signer checks, seeds validation and minimal \u201cdeny-by-default\u201d patterns. Placeholder \u00b7 upcoming content will detail the N1 security labs, exercises, and validation criteria. Stay tuned",
+    "source": "chapters/tech_06d1_security_labs_n1_en"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_1",
+    "text": "Security Labs N2 \u2014 Labs 4 \u00e0 6 N1 Hub Objectif N2 : s\u00e9curiser les surfaces \u201cavanc\u00e9es\u201d : d\u00e9s\u00e9rialisation, CPI, arithm\u00e9tique. Les exemples ci-dessous sont con\u00e7us pour un repo de lab (tests de preuve), pas pour des cibles r\u00e9elles. 04 Arbitrary Data Injection D\u00e9s\u00e9rialisation de donn\u00e9es sans v\u00e9rifier le propri\u00e9taire / le type du compte. \ud83d\udd34 Buggy (anti-pattern) pub fn read_state(ctx: Context<ReadState>) -> Result<()> { // \u26a0\ufe0f \"state\" est raw, on lit des bytes et on interpr\u00e8te sans owner check let data =",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_2",
+    "text": "ctx.accounts.state.data.borrow(); // (parsing custom layout logic) Ok(()) } #[derive(Accounts)] pub struct ReadState<'info> { /// CHECK: unsafe pub state: AccountInfo<'info>, } Pourquoi c\u2019est dangereux ? Un compte \u201cfake\u201d peut porter des bytes plausibles mais provenir d\u2019un owner inattendu. En audit : owner check avant toute interpr\u00e9tation (d\u00e9s\u00e9rialisation). Patch (typing + owner) #[derive(Accounts)] pub struct ReadState<'info> { pub state: Account<'info, State>, // \u2705 Anchor v\u00e9rifie discriminator",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_3",
+    "text": "+ owner } Si vous devez rester en raw : v\u00e9rifier *state.owner == program_id (ou owner attendu) avant parse. Test (squelette) it(\"rejects state account if owner/program_id mismatch\", async () => { // Arrange: pass an account owned by SystemProgram or another program // Assert: instruction fails (owner mismatch) }); Checklist de sortie (Lab 04) Le compte d\u2019\u00e9tat est typ\u00e9 ( Account<State> ) ou owner-check\u00e9 avant parse. Le test \u201cowner mismatch\u201d est rouge avant patch et vert apr\u00e8s. Aucune",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_4",
+    "text": "d\u00e9s\u00e9rialisation raw sans justification et invariant. 05 Fake CPI Program Invoquer un programme pass\u00e9 en account sans v\u00e9rifier son Program ID. \ud83d\udd34 Buggy (CPI) pub fn swap(ctx: Context<Swap>, amount: u64) -> Result<()> { // \u26a0\ufe0f token_program est un AccountInfo, pas un Program<Token> => spoof possible en lab. let ix = spl_token::instruction::transfer( ctx.accounts.token_program.key(), ctx.accounts.source.key, ctx.accounts.dest.key, ctx.accounts.authority.key, &[], amount )?; invoke(&ix, &[",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_5",
+    "text": "ctx.accounts.token_program.clone(), ctx.accounts.source.clone(), ctx.accounts.dest.clone(), ctx.accounts.authority.clone(), ])?; Ok(()) } #[derive(Accounts)] pub struct Swap<'info> { /// CHECK: unsafe pub token_program: AccountInfo<'info>, /// CHECK: simplified example pub source: AccountInfo<'info>, /// CHECK pub dest: AccountInfo<'info>, /// CHECK pub authority: AccountInfo<'info>, } R\u00e8gle d\u2019audit Tout CPI vers Token/System/Associated Token doit pointer vers l\u2019ID officiel. Le typage Anchor (",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_6",
+    "text": "Program<Token> ) est un garde-fou fort. Patch (program id) #[derive(Accounts)] pub struct Swap<'info> { pub token_program: Program<'info, Token>, // \u2705 typage = ID attendu // (rest of the instructions) } // Si vous \u00eates en raw: if ctx.accounts.token_program.key() != spl_token::ID { return Err(ProgramError::IncorrectProgramId.into()); } Test (squelette) it(\"rejects CPI if token_program is not the official SPL Token program\", async () => { // Arrange: pass a dummy program id in lab harness //",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_7",
+    "text": "Assert: incorrect program id error }); Checklist de sortie (Lab 05) Les programmes CPI sont typ\u00e9s ( Program<T> ) ou v\u00e9rifi\u00e9s via spl_token::ID . Le test \u201cfake program id\u201d est rouge avant patch et vert apr\u00e8s. Les comptes CPI (source/dest/authority/mint) sont coh\u00e9rents et valid\u00e9s. 06 Integer Overflow & Rounding Wrap-around en release + erreurs d\u2019arrondi qui cassent les invariants. \ud83d\udd34 Buggy (math) pub fn mint_shares(amount: u64, price: u64) -> u64 { // \u26a0\ufe0f overflow possible en release + rounding non",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_8",
+    "text": "ma\u00eetris\u00e9 (amount * 1_000_000) / price } Indice : multiplications / divisions sur u64 + facteurs d\u2019\u00e9chelle sans checks = danger. Invariant \u00e0 expliciter D\u00e9finir ce qui doit rester vrai : bornes, conservation, monotonicit\u00e9. Ensuite, utiliser des op\u00e9rations checked et tester les coins-cases. Patch (checked + erreurs explicites) pub fn mint_shares(amount: u64, price: u64) -> Result<u64> { let scaled = amount .checked_mul(1_000_000) .ok_or(ErrorCode::MathOverflow)?; let shares = scaled",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_9",
+    "text": ".checked_div(price) .ok_or(ErrorCode::DivisionByZero)?; Ok(shares) } \u00c0 compl\u00e9ter : strat\u00e9gie d\u2019arrondi (floor/ceil/bankers) + tests d\u00e9di\u00e9s. Tests (squelette) it(\"fails on multiplication overflow\", async () => { // amount near u64::MAX should throw MathOverflow }); it(\"handles rounding edge cases deterministically\", async () => { // price values that create fractional shares -> expected rounding policy }); Checklist de sortie (Lab 06) Op\u00e9rations sensibles en checked_* + erreurs explicites.",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_chunk_10",
+    "text": "Politique d\u2019arrondi document\u00e9e et test\u00e9e. Coins-cases : 0/1/max/limites/arrondis \u2192 tests automatis\u00e9s. Retour N1 \u2014 Labs 1\u20133 Gate N2 valid\u00e9 si vous avez 3 tests rouges + 3 patches + 3 r\u00e9gressions vertes . Fin Hub \u2014 Security Labs",
+    "source": "chapters/tech_06d2_security_labs_n2"
+  },
+  {
+    "id": "tech_06d2_security_labs_n2_en_chunk_1",
+    "text": "Security Labs \u2014 N2 (Hardening) This level is being drafted. It will focus on hardening Solana programs: CPI safety, rent/rba considerations, PDA abuse prevention, replay protection, and regression checks. Placeholder \u00b7 upcoming content will detail the N2 security labs, attack/defense drills, and audit-grade acceptance criteria. Stay tuned",
+    "source": "chapters/tech_06d2_security_labs_n2_en"
+  },
+  {
+    "id": "tech_06d_security_labs_chunk_1",
+    "text": "Security Labs La s\u00e9curit\u00e9 n'est pas une option. Dans ce module, vous allez auditer, exploiter et patcher des vuln\u00e9rabilit\u00e9s r\u00e9elles (Anchor + Native) en produisant des preuves : tests d'exploitation + tests de r\u00e9gression. Objectif D\u00e9velopper le reflexe adversarial (attacker mindset). Produire un patch audit-grade (validation, invariants, CPI safe). \u00c9crire des tests n\u00e9gatifs qui cassent avant patch et passent apr\u00e8s. M\u00e9thodologie du Lab (obligatoire) Identifier la faille dans le snippet \u201cBuggy\u201d.",
+    "source": "chapters/tech_06d_security_labs"
+  },
+  {
+    "id": "tech_06d_security_labs_chunk_2",
+    "text": "Mod\u00e9liser le vecteur d\u2019attaque (Exploit) et l\u2019objectif de l\u2019attaquant. Patch minimal + explicable (pas de rust magic, pas de \u201c\u00e7a marche\u201d). Preuve : test d\u2019exploitation (rouge) puis test de r\u00e9gression (vert). N1 Labs 1\u20133 Owner checks \u2022 Seeds/PDA spoof \u2022 Signer vs Authority N2 Labs 4\u20136 Unchecked data \u2022 Fake CPI program \u2022 Overflow & rounding Checklist \u201cAudit-grade\u201d (\u00e0 appliquer partout) Accounts & ownership V\u00e9rifier owner (program owner / token program / system) quand c\u2019est pertinent. Ne jamais",
+    "source": "chapters/tech_06d_security_labs"
+  },
+  {
+    "id": "tech_06d_security_labs_chunk_3",
+    "text": "d\u00e9s\u00e9rialiser un compte dont le propri\u00e9taire est inattendu. \u00c9viter les AccountInfo \u201craw\u201d sans contraintes si un type Anchor existe. Authority & permissions Signer \u2260 Authority . Le payer de la TX n\u2019est pas forc\u00e9ment le d\u00e9cideur. Pour les PDAs : seeds + bump doivent \u00eatre contraints (Anchor constraints). Valider que les accounts \u201ccibles\u201d (vault, ATA, config, state) sont li\u00e9s \u00e0 l\u2019authority attendue. CPI & program ids Ne jamais invoquer \u201cn\u2019importe quel programme\u201d pass\u00e9 en argument : v\u00e9rifier program",
+    "source": "chapters/tech_06d_security_labs"
+  },
+  {
+    "id": "tech_06d_security_labs_chunk_4",
+    "text": "id . Pour Token : v\u00e9rifier mint / authority / ATA / owner selon le flow. Limiter les remaining_accounts \u00e0 ce qui est strictement n\u00e9cessaire. Math & invariants En release, l\u2019overflow peut \u201cwrap\u201d : utiliser checked_* ou invariants + tests. Documenter l\u2019invariant : conservation, borne, monotonicit\u00e9, supply. Tester les \u201ccoins-cases\u201d : 0, 1, max, arrondis, limites. Index des Labs (1 \u2192 6) 01 Missing Owner Check Validation d\u2019ownership / accounts \u201cli\u00e9s\u201d N1 02 PDA Derivation / Seeds Spoof Fake PDA, seeds",
+    "source": "chapters/tech_06d_security_labs"
+  },
+  {
+    "id": "tech_06d_security_labs_chunk_5",
+    "text": "dynamiques, contraintes manquantes N1 03 Signer vs Authority Payer de TX \u2260 d\u00e9cideur, confusion d\u2019autorit\u00e9 N1 04 Arbitrary Data Injection D\u00e9s\u00e9rialisation unsafe, owner check bypass N2 05 Fake CPI Program Program-id spoof, CPI vers faux token program N2 06 Integer Overflow & Rounding Wrap-around, arrondis, \u201cmoney printing\u201d N2 R\u00e8gle de validation : un lab n\u2019est \u201cfait\u201d que si vous avez (1) un test d\u2019exploitation qui \u00e9choue , puis (2) un patch , puis (3) le test de r\u00e9gression qui passe . Validation",
+    "source": "chapters/tech_06d_security_labs"
+  },
+  {
+    "id": "tech_06d_security_labs_chunk_6",
+    "text": "du Module Pour valider ce module, vous devez fournir un rapport d'audit sur le repo vulnerable-defi (ou \u00e9quivalent), contenant : 6 exploits Tests \u201crouges\u201d reproduisant la vuln\u00e9rabilit\u00e9. 6 patches Correctifs minimaux, document\u00e9s, justifi\u00e9s. All green Tests de r\u00e9gression + CI/QA passants. D\u00e9marrer N1 \u2014 Labs 1\u20133 Continuer N2 \u2014 Labs 4\u20136",
+    "source": "chapters/tech_06d_security_labs"
+  },
+  {
+    "id": "tech_06d_security_labs_en_chunk_1",
+    "text": "LABS Security Audit Find, Explain, Fix Code is liability. This section is an intensive audit workshop: we start with vulnerable snippets, explain the threat model, and patch them. Each lab exists in both Anchor and Native versions. Mission Identify common vulns (Owner, Signer, Seeds). Write robust fixes. Produce clear audit notes. Lab Format 1. Snippet The vulnerable code 2. Threat Impact & Attack Vector 3. Fix The patch (Native/Anchor) 4. Test Hack reproduction 01 Lab 1: Missing Owner Check",
+    "source": "chapters/tech_06d_security_labs_en"
+  },
+  {
+    "id": "tech_06d_security_labs_en_chunk_2",
+    "text": "Critical Severity Vulnerable Code UNSAFE fn process (accounts: /* implementation details */) { // \u26a0\ufe0f Accepts any account! let state = accounts.state; // Attacker injects a fake account with fake data let data = state.try_borrow_data()?; } Patched Code SAFE // Native if state.owner != program_id { return Err (Error::IncorrectProgramId); } // Anchor #[account(owner = crate::ID)] pub state : Account <'info, State>, Lab 2: Missing Signer Auth Bypass A critical instruction (Withdraw) does not require",
+    "source": "chapters/tech_06d_security_labs_en"
+  },
+  {
+    "id": "tech_06d_security_labs_en_chunk_3",
+    "text": "the authority to have signed the transaction. Lab 3: Bad PDA Seeds Spoofing Generic or unstable seeds allowing collisions or Vault substitution. Lab 4: Excess Writable Risk Requesting `mut` without reason increases attack surface (parallelism, logic bugs). Lab 5: Token Authority Bad Check Theft Confusion between TokenAccount Owner and the expected Authority (Delegate). Lab 6: Fake CPI Program Phishing Instruction accepts an arbitrary `token_program`. Attacker passes a malicious program. Lab 7:",
+    "source": "chapters/tech_06d_security_labs_en"
+  },
+  {
+    "id": "tech_06d_security_labs_en_chunk_4",
+    "text": "Bad Invariants Logic Error Missing state checks (bal > 0, invalid state transition). Mathematical incoherence. Lab 8: Unsafe Close Drain Closing account sending Lamports to an unverified destination. Lab 9: Reentrancy / Ordering Logic State mutation AFTER a CPI. Always follow: Check -> Effect -> Interact. Lab 10: Silent Failures Audit Hidden errors or generic 0x1 codes. Missing negative tests. Deliverables (Proofs) 10 Audit Notes For each Lab: Bug / Impact / Fix / Proof. \"Audit-Ready\" Checklist",
+    "source": "chapters/tech_06d_security_labs_en"
+  },
+  {
+    "id": "tech_06d_security_labs_en_chunk_5",
+    "text": "The final validation grid for any project.",
+    "source": "chapters/tech_06d_security_labs_en"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_1",
+    "text": "Tokens & CPI \u2014 N1 Token fundamentals (ATA, authorities, constraints) N1 pose les bases \u201cnon n\u00e9gociables\u201d : distinguer mint , token accounts , ATA , et authorities . Objectif : \u00e9crire des instructions qui refusent les entr\u00e9es ambigu\u00ebs et qui sont testables. Non-n\u00e9gociables (N1) : Le mint attendu est valid\u00e9 \u00e0 chaque \u00e9tape. Les token accounts sont li\u00e9s (owner + mint coh\u00e9rents). L\u2019authority \u201cd\u00e9cideur\u201d est explicite (pas d\u2019implicite via le payer). 1) Rappels essentiels Mint Un mint d\u00e9finit le token",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_2",
+    "text": ": decimals , supply et authorities. La plupart des erreurs critiques sont des mismatches : vous croyez manipuler \u201cle bon mint\u201d alors que ce n\u2019est pas le cas. Token Account / ATA Un token account porte un solde pour un mint . L\u2019ATA est le token account standard d\u00e9riv\u00e9 de (owner, mint) . En audit, on exige que les comptes \u201ccibles\u201d soient exactement ceux attendus (pas \u201cun compte qui ressemble\u201d). 2) Authority : owner, delegate, close authority La confusion la plus fr\u00e9quente est d\u2019assimiler \u201ccelui",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_3",
+    "text": "qui signe\u201d \u00e0 \u201ccelui qui d\u00e9cide\u201d. Or, le signer peut \u00eatre seulement le payer , un relayer, ou un acteur auxiliaire. Owner Propri\u00e9taire du token account (contr\u00f4le principal). Delegate D\u00e9l\u00e9gation limit\u00e9e (montant / scope). \u00c0 traiter explicitement. Close authority Qui peut fermer le compte (risque de grief si mal g\u00e9r\u00e9). Important : \u201cSigner \u2260 Authority\u201d doit appara\u00eetre noir sur blanc dans le design. Votre code doit exprimer qui est autoris\u00e9 \u00e0 agir et sur quoi . 3) Patterns Anchor recommand\u00e9s (checks",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_4",
+    "text": "lisibles) Pr\u00e9f\u00e9rer les constraints Anchor aux checks \u201c\u00e0 la main\u201d quand c\u2019est possible : c\u2019est plus auditable, plus court, et testable. // Exemple (p\u00e9dagogique) : contraindre ATA et mint // Objectif : emp\u00eacher un token account non li\u00e9 (owner/mint) d'\u00eatre accept\u00e9. #[derive(Accounts)] pub struct TransferChecked<'info> { pub authority: Signer<'info>, #[account( mut, associated_token::mint = mint, associated_token::authority = authority )] pub from_ata: Account<'info, TokenAccount>, #[account( mut,",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_5",
+    "text": "associated_token::mint = mint, associated_token::authority = recipient )] pub to_ata: Account<'info, TokenAccount>, pub recipient: SystemAccount<'info>, pub mint: Account<'info, Mint>, pub token_program: Program<'info, Token>, pub associated_token_program: Program<'info, AssociatedToken>, pub system_program: Program<'info, System>, } Note : cet exemple illustre la contrainte. En pratique, ajuster selon votre flow (PDA vaults, delegates, etc.). 4) Mini-Labs (N1) \u2014 format \u201cpreuve\u201d E1 Wrong ATA /",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_6",
+    "text": "Wrong owner Sympt\u00f4me : un compte token \u201cvalide\u201d mais pas li\u00e9 \u00e0 l\u2019owner attendu est accept\u00e9. Preuve : test n\u00e9gatif + patch : ATA constraint / owner check + test vert. E2 Missing mint check Sympt\u00f4me : un flow accepte un token account d\u2019un mint inattendu. Preuve : test n\u00e9gatif + patch : assert mint = expected + test vert. E3 Signer vs Authority Sympt\u00f4me : le payer/signer d\u00e9clenche une action r\u00e9serv\u00e9e \u00e0 une authority. Preuve : test n\u00e9gatif + patch : authority explicite (has_one / signer) + test",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_chunk_7",
+    "text": "vert.",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_en_chunk_1",
+    "text": "Tokens & CPI N1 Token fundamentals (ATA, authorities, constraints) This level is about writing \u201cboringly correct\u201d token logic. Your main objective is to constrain accounts, validate authorities, and prove with negative tests. Scope (strict) You must be able to Derive and validate an ATA for a given (owner, mint). Reject a forged token account (wrong mint, wrong owner, wrong token program). Write an instruction with Anchor constraints that force correctness. Produce tests that fail before the",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1_en"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_en_chunk_2",
+    "text": "fix and pass after the fix. Out of scope (N1) Token-2022 extensions (covered in N2). Complex CPI routing and remaining accounts hardening (covered in N2). AMM pool math (covered in module 06f). Audit-grade invariants Think in invariants. A safe token flow is one where the critical equalities remain true regardless of user input. Account identity token_account.mint equals the expected mint . token_account.owner equals the expected owner (or PDA vault). The token account is governed by the",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1_en"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_en_chunk_3",
+    "text": "expected token program (Token, not a fake program). Authority correctness Signer is required only when it is the real authority. No implicit authority: if a delegate is accepted, it is explicitly validated. Close authority is never assumed; it is validated when used. Preferred pattern: constraints first In Anchor, prefer deterministic constraints that fail at account validation time. Ad-hoc runtime checks are acceptable only when constraints are insufficient. Test plan (minimum) Negative tests",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1_en"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_en_chunk_4",
+    "text": "(red first) Mint mismatch: pass token account for mint A when mint B is expected. Owner mismatch: pass token account not owned by the expected owner. ATA forgery: pass a random token account instead of derived ATA. Regression tests (green) Happy path with correct ATA and correct authorities. Boundary amounts (0 rejected, 1 accepted, max accepted if within constraints). Idempotence where expected (e.g., derive ATA does not duplicate state). Definition of Done (N1) No placeholders, no vague",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1_en"
+  },
+  {
+    "id": "tech_06e1_tokens_and_cpi_n1_en_chunk_5",
+    "text": "statements, and no \u201ctrust me\u201d logic. Constraints are used wherever possible; runtime checks are explicit and justified. At least 3 negative tests and 3 regression tests exist and are stable. QA is green and navigation links resolve in both languages.",
+    "source": "chapters/tech_06e1_tokens_and_cpi_n1_en"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_chunk_1",
+    "text": "Tokens & CPI \u2014 N2 Token-2022 + CPI safe (hardening) N2 consolide la s\u00e9curit\u00e9 \u201cruntime\u201d : program-id verification , CPI whitelisting , gestion stricte de remaining_accounts , et contr\u00f4le des PDA signers . Le but est d\u2019\u00e9liminer les classes d\u2019erreurs \u201cdangereuses par d\u00e9faut\u201d. Important : ce chapitre d\u00e9crit des patterns d\u00e9fensifs . Vous devez \u00eatre capable de prouver par tests que votre code refuse un CPI vers un program id inattendu et qu\u2019il contraint les comptes critiques. 1) Token-2022 : ce que",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_chunk_2",
+    "text": "\u00e7a change (niveau design) Token-2022 introduit des extensions qui enrichissent le comportement des tokens (par exemple : metadata, transfer fees, hooks, restrictions). Cela augmente la surface d\u2019audit : on doit v\u00e9rifier quel programme token est utilis\u00e9 et quelles hypoth\u00e8ses restent valides. Risque : hypoth\u00e8ses fausses Un code \u00e9crit \u201ccomme si\u201d SPL Token classique \u00e9tait toujours vrai peut \u00e9chouer si des extensions modifient la s\u00e9mantique (fees, hooks, restrictions). R\u00e8gle : expliciter le choix",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_chunk_3",
+    "text": "D\u00e9cider : Token Program classique, Token-2022, ou compat multi-program. Ensuite : whitelist program id et tester les chemins. 2) CPI safe : patterns d\u00e9fensifs Program ID verification Ne jamais invoquer un programme \u201cfourni par l\u2019utilisateur\u201d sans contr\u00f4le. En audit, on exige : program id attendu (Token/Token-2022/ATA/System). // Exemple (conceptuel) : v\u00e9rifier un program id attendu require_keys_eq!(token_program.key(), spl_token::id(), CustomError::InvalidTokenProgram); remaining_accounts",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_chunk_4",
+    "text": "minimal Les comptes additionnels augmentent la surface d\u2019attaque et d\u2019erreur. Strat\u00e9gie : n\u2019accepter que ce qui est n\u00e9cessaire et valider (taille, ordre, owner, mint). // Principe : valider strictement le set attendu (taille/ordre) require!(ctx.remaining_accounts.len() == EXPECTED, CustomError::UnexpectedRemainingAccounts); PDA signers (CPI) Si votre programme signe via PDA, les seeds + bump doivent \u00eatre contraints . Le \u201cvault PDA\u201d ne doit pas \u00eatre librement substituable. // Exemple (conceptuel)",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_chunk_5",
+    "text": ": signer CPI avec seeds (PDA) let seeds: &[&[u8]] = &[b\"vault\", mint.key().as_ref(), &[vault_bump]]; // invoke_signed(program_id, accounts, &[seeds]); Remarque : l\u2019impl\u00e9mentation exacte d\u00e9pend de votre design Anchor/Native. Le point est l\u2019invariant : \u201cce vault est le n\u00f4tre\u201d. 3) Mini-Labs (N2) \u2014 format \u201cpreuve\u201d E4 CPI program-id mismatch Sympt\u00f4me : le programme CPI n\u2019est pas celui attendu. Preuve : test n\u00e9gatif + patch : whitelist program ids + test vert. E5 Unchecked remaining accounts Sympt\u00f4me",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_chunk_6",
+    "text": ": des comptes additionnels non valid\u00e9s modifient le comportement. Preuve : test n\u00e9gatif + patch : set strict (taille/ordre/owner) + test vert. E6 PDA signer mismatch Sympt\u00f4me : un compte \u201cvault\u201d non d\u00e9riv\u00e9 correctement est accept\u00e9. Preuve : test n\u00e9gatif + patch : seeds constraints + test vert.",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_en_chunk_1",
+    "text": "Tokens & CPI N2 Token-2022 + CPI safe (program-id verification, remaining accounts, PDA signers) N2 is where most real exploits happen: program-id confusion, sloppy remaining accounts, and implicit signing. The goal is to make CPI fail-loud and unforgeable . Threat model (what breaks in prod) CPI Spoof Attacker supplies an unexpected \u201ctoken program\u201d account, so your CPI calls the wrong program. Fix : verify exact program ids (Token, Token-2022, Associated Token). Remaining accounts abuse You",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2_en"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_en_chunk_2",
+    "text": "pass extra accounts for CPI and later assume their meaning without validating their identity. Fix : minimal set, explicit ordering/length checks when order matters. Implicit signing A PDA is \u201cassumed\u201d to sign but seeds/bump are wrong or inconsistent across calls. Fix : derive seeds centrally; use a single source of truth for signer seeds. Token-2022 extension mismatch You think you run Token-2022 features (transfer hook, confidential transfer, metadata), but you are actually invoking Token",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2_en"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_en_chunk_3",
+    "text": "legacy, or vice-versa. Fix : explicit choice and checks. CPI safety contract Rule 1 \u2014 Verify program ids Token (legacy) program id is explicitly enforced when expected. Token-2022 program id is explicitly enforced when expected. Associated Token Account program id is enforced when deriving/creating ATAs. Rule 2 \u2014 Remaining accounts are not \u201cfree\u201d Minimal number of remaining accounts. If optional, document and validate conditions. If ordering matters: validate length and expected pubkeys . Never",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2_en"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_en_chunk_4",
+    "text": "\u201ccast\u201d meaning from position without explicit checks. Rule 3 \u2014 PDA signer must be deterministic Signer seeds are derived once and reused consistently. No \u201cbump from user input\u201d. Bump is derived internally from canonical PDA derivation. All CPI calls that require signing must use the same seed material. Rule 4 \u2014 Make Token-2022 choice visible Your docs and code must show whether you use Token legacy or Token-2022. If you use Token-2022, document which extension(s) and the security impact",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2_en"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_en_chunk_5",
+    "text": "(validation, hooks, extra accounts). Minimum test suite (N2) Negative tests CPI spoof: pass a wrong token program account and expect rejection. Remaining accounts: pass extra accounts and expect rejection when not needed. PDA signing: mutate seeds/bump and expect signature failure (explicit error). Regression tests Happy CPI path for both Token legacy and Token-2022 (if supported). Idempotence checks: repeated flows do not degrade authority state. Explicit min/max boundaries for amounts and",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2_en"
+  },
+  {
+    "id": "tech_06e2_tokens_and_cpi_n2_en_chunk_6",
+    "text": "decimals conversions. Definition of Done (N2) All CPI targets are program-id verified (no implicit token program). Remaining accounts are minimized and validated (length/order when needed). Signer seeds are deterministic and centralized; no divergence between instructions. Negative tests exist for CPI spoof, remaining accounts abuse, and signer confusion. QA is green; routing is valid in both languages.",
+    "source": "chapters/tech_06e2_tokens_and_cpi_n2_en"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_chunk_1",
+    "text": "Tokens & CPI Dans Solana, la \u201cvaleur\u201d est port\u00e9e par des mints , des token accounts , des ATA et des authorities . Dans ce module, vous apprenez \u00e0 construire des flux audit-grade : checks , constraints , invariants et CPI safe . Objectif Ma\u00eetriser les primitives SPL : Mint , Token Account , ATA . \u00c9viter les erreurs de s\u00e9curit\u00e9 : mint mismatch , authority confusion , CPI spoof . Produire des preuves : tests n\u00e9gatifs + tests de r\u00e9gression . R\u00e8gle d\u2019or (audit-grade) Identifier la donn\u00e9e de",
+    "source": "chapters/tech_06e_tokens_and_cpi"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_chunk_2",
+    "text": "confiance (mint, owner, authority, PDA, token program). Contraindre tout ce qui peut \u00eatre falsifi\u00e9 (Anchor constraints > checks ad hoc). Refuser explicitement les cas ambigus (erreurs custom, logs utiles). Prouver : un test \u201crouge\u201d avant patch, puis un test \u201cvert\u201d apr\u00e8s patch. N1 Token fundamentals ATA \u2022 authorities \u2022 constraints N2 Token-2022 + CPI safe program-id verification \u2022 remaining accounts \u2022 PDA signers Mod\u00e8le mental (SPL Token) Objets Mint : d\u00e9finit le token (decimals, supply, mint",
+    "source": "chapters/tech_06e_tokens_and_cpi"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_chunk_3",
+    "text": "authority, freeze authority). Token Account : contient un solde pour un mint donn\u00e9. ATA : token account \u201cstandard\u201d d\u00e9riv\u00e9 (owner + mint). Authority : qui est autoris\u00e9 \u00e0 agir (owner, delegate, close authority, etc.). Risque typique Mint mismatch : on transf\u00e8re un token A alors qu\u2019on attendait B. Authority confusion : le signer de la TX n\u2019est pas la bonne authority. ATA forgery : compte \u201ctoken\u201d non li\u00e9 \u00e0 l\u2019owner/mint attendus. CPI spoof : appel vers un programme \u201ctoken\u201d non attendu. Checklist",
+    "source": "chapters/tech_06e_tokens_and_cpi"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_chunk_4",
+    "text": "\u201cToken-safe\u201d (non n\u00e9gociable) Accounts Le mint utilis\u00e9 est celui attendu (et stable sur tout le flow). L\u2019 owner du token account est coh\u00e9rent (ATA / owner exact). Les vaults (si PDAs) sont d\u00e9riv\u00e9s (seeds + bump) et pas \u201cpass\u00e9s librement\u201d. Authorities & CPI Signer \u2260 Authority : valider explicitement quelle cl\u00e9 d\u00e9cide. En CPI : v\u00e9rifier le program id (Token / Token-2022 / ATA) attendu. remaining_accounts : r\u00e9duire au strict minimum, v\u00e9rifier taille/ordre si n\u00e9cessaire. Math & UX G\u00e9rer decimals et",
+    "source": "chapters/tech_06e_tokens_and_cpi"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_chunk_5",
+    "text": "conversions (\u00e9viter les unit\u00e9s ambigu\u00ebs). Prot\u00e9ger l\u2019utilisateur : min_out , erreurs explicites. Tester les limites : 0, 1, max, arrondis, valeurs \u201cfronti\u00e8res\u201d. Preuves (tests) Un test n\u00e9gatif \u201crouge\u201d pour chaque cas critique (mint mismatch, authority, CPI spoof). Un patch minimal et justifi\u00e9 (pas de \u201crust magic\u201d). Un test \u201cvert\u201d de r\u00e9gression (et id\u00e9alement CI verte). Validation du Module Pour valider ce module, vous devez fournir un mini rapport \u201caudit-grade\u201d contenant : 1 rapport Mod\u00e8le",
+    "source": "chapters/tech_06e_tokens_and_cpi"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_chunk_6",
+    "text": "mental + risques + d\u00e9cisions de design. \u2265 6 tests Tests n\u00e9gatifs + tests de r\u00e9gression (CPI, ATA, authorities). QA verte Nav + QA + liens internes conformes. D\u00e9marrer N1 \u2014 Token fundamentals Continuer N2 \u2014 Token-2022 + CPI safe",
+    "source": "chapters/tech_06e_tokens_and_cpi"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_en_chunk_1",
+    "text": "Tokens & CPI On Solana, \u201cvalue\u201d is carried by mints , token accounts , ATAs , and authorities . This module focuses on building audit-grade flows: constraints , explicit checks , invariants , and CPI-safe execution. Outcome Master SPL primitives: Mint , Token Account , ATA . Prevent real failures: mint mismatch , authority confusion , CPI spoof . Ship proofs: negative tests + regression tests . Audit-grade golden rule Identify trusted data (mint, owner, authority, PDA, token program). Constrain",
+    "source": "chapters/tech_06e_tokens_and_cpi_en"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_en_chunk_2",
+    "text": "everything that can be forged (Anchor constraints > ad-hoc checks). Reject ambiguity explicitly (custom errors, useful logs). Prove : one red test before patch, then a green test after patch. N1 Token fundamentals ATA \u2022 authorities \u2022 constraints N2 Token-2022 + CPI safe program-id verification \u2022 remaining accounts \u2022 PDA signers Mental model (SPL Token) Objects Mint : defines the token (decimals, supply, mint authority, freeze authority). Token Account : holds a balance for one given mint. ATA :",
+    "source": "chapters/tech_06e_tokens_and_cpi_en"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_en_chunk_3",
+    "text": "standard derived token account (owner + mint). Authority : who is allowed to act (owner, delegate, close authority, etc.). Typical risk Mint mismatch : you transfer token A while you expected token B. Authority confusion : the transaction signer is not the real authority. ATA forgery : \u201ctoken-like\u201d account not tied to expected owner/mint. CPI spoof : CPI to an unexpected \u201ctoken program\u201d. Non-negotiable \u201cToken-safe\u201d checklist Accounts The mint used is the expected one (stable across the entire",
+    "source": "chapters/tech_06e_tokens_and_cpi_en"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_en_chunk_4",
+    "text": "flow). The token account owner is coherent (exact ATA / expected owner). If vaults are PDAs: they are derived (seeds + bump), not \u201cfreely provided\u201d. Authorities & CPI Signer \u2260 Authority : validate explicitly who decides. In CPI: verify the expected program id (Token / Token-2022 / ATA). remaining_accounts : keep it minimal; verify size/order when required. Math & UX Handle decimals and conversions (avoid ambiguous units). Protect the user: min_out , explicit errors, no silent rounding surprises.",
+    "source": "chapters/tech_06e_tokens_and_cpi_en"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_en_chunk_5",
+    "text": "Test boundaries: 0, 1, max, rounding edges, and \u201cnear-zero\u201d behaviors. Proofs (tests) One red negative test per critical case (mint mismatch, authority, CPI spoof). A minimal, justified patch (no \u201cRust magic\u201d). A green regression test and CI passes. Module validation To validate this module, provide a short \u201caudit-grade\u201d report containing: 1 report Mental model + risks + explicit design choices. \u2265 6 tests Negative tests + regression tests (CPI, ATA, authorities). Green QA Navigation + QA +",
+    "source": "chapters/tech_06e_tokens_and_cpi_en"
+  },
+  {
+    "id": "tech_06e_tokens_and_cpi_en_chunk_6",
+    "text": "internal links compliant. Start N1 \u2014 Token fundamentals Continue N2 \u2014 Token-2022 + CPI safe",
+    "source": "chapters/tech_06e_tokens_and_cpi_en"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_chunk_1",
+    "text": "Build an AMM \u2014 N1 Pool state + LP math (invariants) N1 d\u00e9finit le state du pool et les op\u00e9rations add/remove liquidity . Priorit\u00e9 : invariants, arrondis, conversions, et checks de comptes (vaults, LP mint, authority). Non-n\u00e9gociables (AMM N1) : Vault A/B : mint et owner v\u00e9rifi\u00e9s (pas de substitution). Calculs : u128 + checked_* + tests limites. Arrondis : r\u00e8gle document\u00e9e et stable (ex. \u201cround down\u201d c\u00f4t\u00e9 pool). 1) State du pool (concept) Un pool minimal doit au moins fixer : mints A/B, vaults",
+    "source": "chapters/tech_06f1_build_an_amm_n1"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_chunk_2",
+    "text": "A/B, LP mint, PDA authority, et param\u00e8tres de fees. L\u2019invariant cl\u00e9 : \u201cles vaults et la LP mint appartiennent \u00e0 ce pool\u201d. Comptes critiques Vault A (mint A) Vault B (mint B) LP Mint PDA Authority (seeds + bump) Checks attendus Vault mint = mint attendu Vault owner = PDA authority LP mint authority = PDA authority Program id Token v\u00e9rifi\u00e9 (SPL / Token-2022 selon design) 2) Add liquidity : shares et arrondis Deux cas : init (pool vide) et pool existant . En audit, ce qui importe : une r\u00e8gle stable",
+    "source": "chapters/tech_06f1_build_an_amm_n1"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_chunk_3",
+    "text": "d\u2019arrondi et des bornes explicites (min contribution, min LP out). // Exemple conceptuel : utiliser u128 pour r\u00e9duire le risque d'overflow let x: u128 = vault_a_amount as u128; let y: u128 = vault_b_amount as u128; // shares ~ f(x, y, lp_supply) (selon design) // Toujours : checked_*, conversions explicites, tests limites. Important : documenter la r\u00e8gle d\u2019arrondi (\u201cround down\u201d ou \u201cround up\u201d) et l\u2019appliquer de mani\u00e8re coh\u00e9rente dans add/remove. Les tests doivent couvrir les cas limites (petites",
+    "source": "chapters/tech_06f1_build_an_amm_n1"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_chunk_4",
+    "text": "valeurs, 1 unit\u00e9, etc.). 3) Remove liquidity : proportionalit\u00e9 Le retrait doit \u00eatre proportionnel aux LP burnt, avec un min_out (ou min A/B) si vous exposez l\u2019UX. Les invariants \u00e0 tester : pas de retrait \u201cau-del\u00e0\u201d, pas de drift d\u2019arrondi catastrophique. V\u00e9rifier que la LP burn provient de l\u2019owner attendu (ou de l\u2019authority attendue). Calculer les sorties en u128, appliquer arrondi, puis transf\u00e9rer via CPI Token. Tester : retrait total, retrait minuscule, retrait avec vaults tr\u00e8s d\u00e9s\u00e9quilibr\u00e9s.",
+    "source": "chapters/tech_06f1_build_an_amm_n1"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_chunk_5",
+    "text": "4) Mini-Labs (N1) \u2014 format \u201cpreuve\u201d F1 Overflow / cast unsafe Patch : u128 + checked_* + tests limites (max, near-max). F2 Rounding edge cases Patch : r\u00e8gle d\u2019arrondi stable + tests (1 unit\u00e9, petites valeurs). F3 Vault mismatch Patch : checks mint/owner/authority stricts + test \u201crouge\u201d puis \u201cvert\u201d. Retour Hub \u2014 Build an AMM",
+    "source": "chapters/tech_06f1_build_an_amm_n1"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_en_chunk_1",
+    "text": "Build an AMM N1 Pool + LP invariants (vaults, deposits, withdrawals) In N1 you create the pool state, the vaults, and the LP mint. The goal is to enforce ownership invariants and account identity so that no user can spoof the pool. Pool state (minimum) The pool must define immutable identity: which two mints are traded, which vaults hold reserves, and which LP mint represents liquidity shares. Mints mint_a and mint_b are fixed after init. Decimals are known and used consistently in math. Vaults",
+    "source": "chapters/tech_06f1_build_an_amm_n1_en"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_en_chunk_2",
+    "text": "vault_a holds mint_a only. vault_b holds mint_b only. Vault owner is the pool PDA (not a user key). LP Mint lp_mint is fixed after init. Mint authority is controlled by the program/PDA. Non-negotiable invariants (N1) Identity invariants vault_a.mint == mint_a, vault_b.mint == mint_b. vault_a.owner and vault_b.owner are the pool PDA. lp_mint is the unique LP mint for this pool (no replacement). Accounting invariants Deposit increases reserves and mints LP according to defined formula. Withdraw",
+    "source": "chapters/tech_06f1_build_an_amm_n1_en"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_en_chunk_3",
+    "text": "burns LP and decreases reserves consistently. No negative balances, no silent overflow/underflow. LP minting (minimum policy) First deposit defines initial liquidity; document your policy explicitly. Subsequent deposits mint LP proportional to contribution (consistent rounding policy). Reject deposits that would mint zero LP (unless explicitly supported and tested). Tests (minimum) Negative tests Vault spoof: user passes a token account they own as vault. Mint mismatch: vault_a uses mint_b (must",
+    "source": "chapters/tech_06f1_build_an_amm_n1_en"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_en_chunk_4",
+    "text": "be rejected). LP mint spoof: user passes a different lp_mint (must be rejected). Regression tests Init + deposit + withdraw cycles preserve invariants. Boundary deposits: very small, very large, rounding edges. Idempotence where expected (init fails on second attempt for same PDA). Definition of Done (N1) Pool init produces deterministic PDAs (pool, vaults) and fixed mints. Deposit and withdraw enforce vault ownership and mint identity invariants. At least 3 negative tests + 3 regression tests",
+    "source": "chapters/tech_06f1_build_an_amm_n1_en"
+  },
+  {
+    "id": "tech_06f1_build_an_amm_n1_en_chunk_5",
+    "text": "exist and are stable. QA is green; routing works in English and French.",
+    "source": "chapters/tech_06f1_build_an_amm_n1_en"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_chunk_1",
+    "text": "Build an AMM \u2014 N2 Swaps + fees + hardening (CPI safe) N2 impl\u00e9mente les swaps avec min_out , fees et protections d\u2019arrondis. On y ajoute les \u201cgarde-fous\u201d qui transforment un proto en module auditable : checks de program id, contraintes des comptes et invariants test\u00e9s. Important : ce chapitre reste d\u00e9fensif . On d\u00e9crit les protections et les tests, pas des proc\u00e9dures d\u2019abus. L\u2019objectif est de construire un AMM minimal testable et durci . 1) Swap constant-product : principes Entr\u00e9e :",
+    "source": "chapters/tech_06f2_build_an_amm_n2"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_chunk_2",
+    "text": "l\u2019utilisateur apporte \u0394x (apr\u00e8s fee si applicable). Sortie : le pool rend \u0394y calcul\u00e9 avec une r\u00e8gle stable + arrondis. Protection : l\u2019utilisateur fixe un min_out (slippage guard). Invariant : le comportement doit \u00eatre coh\u00e9rent et testable (arrondis inclus). // Exemple conceptuel : calcul en u128 (arrondi document\u00e9) let x: u128 = reserve_x as u128; let y: u128 = reserve_y as u128; let dx: u128 = amount_in_after_fee as u128; // Sortie th\u00e9orique (concept) : dy = y - (k / (x + dx)) // Attention :",
+    "source": "chapters/tech_06f2_build_an_amm_n2"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_chunk_3",
+    "text": "division enti\u00e8re => arrondi. Documenter et tester. 2) CPI Token : garde-fous Program id check Le programme Token doit \u00eatre celui attendu (SPL Token ou Token-2022 selon votre design). Refuser tout id non whiteliste. // Concept : verify token program id // require_keys_eq!(token_program.key(), expected_token_program_id, CustomError::InvalidTokenProgram); Vault checks Le swap doit utiliser les vaults du pool (mint/owner/authority). Interdire toute substitution. // Concept : validate vault ownership",
+    "source": "chapters/tech_06f2_build_an_amm_n2"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_chunk_4",
+    "text": "+ mint coherence // require_keys_eq!(vault_a.mint, mint_a.key(), CustomError::MintMismatch); // require_keys_eq!(vault_a.owner, pool_authority.key(), CustomError::VaultOwnerMismatch); 3) Invariants & tests Un AMM \u201caudit-grade\u201d n\u2019est pas valid\u00e9 par \u201c\u00e7a marche\u201d. Il est valid\u00e9 par des invariants falsifiables (tests n\u00e9gatifs) et une batterie de tests limites. min_out Test : le swap \u00e9choue si min_out n\u2019est pas atteint. Rounding Test : petites valeurs, 1 unit\u00e9, arrondis coh\u00e9rents. Conservation Test :",
+    "source": "chapters/tech_06f2_build_an_amm_n2"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_chunk_5",
+    "text": "pas de cr\u00e9ation \u201canormale\u201d de valeur via math. 4) Mini-Labs (N2) \u2014 format \u201cpreuve\u201d F4 Fee / rounding consistency Patch : appliquer fee dans le bon ordre + r\u00e8gle d\u2019arrondi stable + tests limites. F5 CPI program-id mismatch Patch : whitelist program ids + test \u201crouge\u201d puis \u201cvert\u201d. F6 Wrong vault / mint passed Patch : constraints strictes (mint/owner/authority) + test de r\u00e9gression.",
+    "source": "chapters/tech_06f2_build_an_amm_n2"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_en_chunk_1",
+    "text": "Build an AMM N2 Swaps + fees + hardening (min_out, accounting, negative tests) N2 is where users lose money if you are sloppy. You must enforce min_out , apply fees consistently, protect against vault spoof and CPI mistakes, and prove correctness under rounding pressure. Swap contract (strict) Input \u2192 Output rules User provides amount_in and min_out . Pool computes output after fees and rounding policy. Reject if computed amount_out < min_out . Vault mints and owners are validated before any",
+    "source": "chapters/tech_06f2_build_an_amm_n2_en"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_en_chunk_2",
+    "text": "transfer. Fee rule Fees must be applied once, consistently, and documented: fee_amount = floor(amount_in \u00b7 fee_bps / 10_000) . Any alternative must be explicit and tested on rounding boundaries. Invariant rule After swap, reserves must remain valid and non-negative, and the pool must maintain constant-product behavior up to rounding. If your model deviates, document the reason. Hardening checklist (N2) Account integrity Reject any vault with wrong mint or wrong owner. Reject if user token",
+    "source": "chapters/tech_06f2_build_an_amm_n2_en"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_en_chunk_3",
+    "text": "accounts have wrong mint. Verify token program id (legacy vs 2022) when doing CPI. User protection Enforce min_out and explicit slippage error. Reject amount_in == 0 and any action that yields zero output when not intended. Explicitly document rounding policy and test its boundary cases. Fee accounting Fee is applied once; stored or distributed deterministically. Rounding does not leak value across repeated swaps. Edge cases (small trades) are explicitly handled and tested. Proofs Negative tests",
+    "source": "chapters/tech_06f2_build_an_amm_n2_en"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_en_chunk_4",
+    "text": "for min_out violation, vault spoof, mint mismatch, and CPI spoof. Regression tests for repeated swaps and rounding stability. QA is green and nav is correct in both languages. Minimum test suite (N2) Negative tests min_out: set min_out above computed output and expect rejection. Vault spoof: replace vault with attacker account and expect rejection. Mint mismatch: swap path uses wrong mint in user account and expect rejection. Fee edge: tiny amount_in where fee rounding is sensitive (must be",
+    "source": "chapters/tech_06f2_build_an_amm_n2_en"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_en_chunk_5",
+    "text": "deterministic). Regression tests Repeated swaps do not break accounting invariants. Rounding stability on boundary values (near-zero, near-max, high decimals). Fee policy remains consistent across swap directions. Definition of Done (N2) Swap enforces min_out and fails-loud on invalid routes. Fee policy is explicit, consistent, and tested on rounding edges. Vault spoof and mint mismatch are blocked by constraints and verified checks. Negative tests + regression tests exist and are stable. QA is",
+    "source": "chapters/tech_06f2_build_an_amm_n2_en"
+  },
+  {
+    "id": "tech_06f2_build_an_amm_n2_en_chunk_6",
+    "text": "green; bilingual routing is locked.",
+    "source": "chapters/tech_06f2_build_an_amm_n2_en"
+  },
+  {
+    "id": "tech_06f_build_an_amm_chunk_1",
+    "text": "Build an AMM Vous construisez un AMM constant-product minimal (pool + LP + swaps) pour apprendre les invariants, la gestion des arrondis et les patterns CPI Token. Le but est p\u00e9dagogique : \u00e9crire quelque chose d\u2019auditable, testable, et robuste. Objectif Comprendre x\u00b7y = k , slippage, fees, LP shares. Faire des maths s\u00fbres : u128 , arrondis, checked_* . Hardening : vault checks, program id checks, invariants test\u00e9s. Invariant central Dans un AMM constant-product, la relation x\u00b7y \u2248 k (avec fees",
+    "source": "chapters/tech_06f_build_an_amm"
+  },
+  {
+    "id": "tech_06f_build_an_amm_chunk_2",
+    "text": "et arrondis) doit rester coh\u00e9rente. La validation \u201caudit-grade\u201d consiste \u00e0 formaliser les invariants et \u00e0 les rendre falsifiables par tests. N1 Pool + LP invariants state \u2022 add/remove liquidity \u2022 rounding rules N2 Swaps + fees + hardening min_out \u2022 CPI safe \u2022 invariants tests Checklist AMM (audit-grade) Vaults & accounts Vault A/B : owner + mint v\u00e9rifi\u00e9s (pas de substitution possible). PDA authority : seeds + bump contraints, signer CPI contr\u00f4l\u00e9. LP mint : supply coh\u00e9rente, authority contr\u00f4l\u00e9e,",
+    "source": "chapters/tech_06f_build_an_amm"
+  },
+  {
+    "id": "tech_06f_build_an_amm_chunk_3",
+    "text": "mint attendu. Math & invariants Calculs en u128 , puis cast explicite (et tests limites). Arrondis d\u00e9finis : \u201cround down\u201d pour prot\u00e9ger le pool, \u201cmin_out\u201d pour prot\u00e9ger l\u2019utilisateur. Invariants test\u00e9s : conservation, bornes, monotonicit\u00e9, pas de \u201ccr\u00e9ation\u201d de valeur. Validation du Module Pour valider l\u2019AMM, vous fournissez : add/remove, swaps, tests d\u2019arrondis, et un bloc \u201cinvariants\u201d. Liquidity Add/remove avec checks et rounding document\u00e9. Swaps min_out, fees, invariants v\u00e9rifi\u00e9s et test\u00e9s.",
+    "source": "chapters/tech_06f_build_an_amm"
+  },
+  {
+    "id": "tech_06f_build_an_amm_chunk_4",
+    "text": "All green QA + nav + tests verts. D\u00e9marrer N1 \u2014 Pool + LP invariants Continuer N2 \u2014 Swaps + hardening",
+    "source": "chapters/tech_06f_build_an_amm"
+  },
+  {
+    "id": "tech_06f_build_an_amm_en_chunk_1",
+    "text": "Build an AMM You will build a minimal constant-product AMM ( x \u00b7 y = k ) with audit-grade protections: strict vault ownership, deterministic PDAs, explicit fees, and min_out slippage guards. Outcome Understand pool state, vaults, LP mint, and invariant enforcement. Prevent classic AMM failures: vault spoof, decimals mismatch, fee leakage, slippage abuse. Ship proofs: negative tests for swaps, deposits, withdrawals, and CPI boundaries. Invariant-first mindset State invariants : vault",
+    "source": "chapters/tech_06f_build_an_amm_en"
+  },
+  {
+    "id": "tech_06f_build_an_amm_en_chunk_2",
+    "text": "mints/owners are fixed; LP mint is fixed; fees are consistent. Math invariants : constant-product is maintained up to rounding; no negative balances. User invariants : user can bound outcomes via min_out and explicit errors. N1 Pool + LP invariants vaults \u2022 deposits \u2022 withdrawals N2 Swaps + fees + hardening min_out \u2022 fee accounting \u2022 tests Minimal constant-product model Let x be vault A reserve and y be vault B reserve. A swap enforces x \u00b7 y = k up to rounding, after applying fees.",
+    "source": "chapters/tech_06f_build_an_amm_en"
+  },
+  {
+    "id": "tech_06f_build_an_amm_en_chunk_3",
+    "text": "Non-negotiables Vaults are owned by the program (PDA), not by users. Vault mints never change after initialization. LP mint supply and user LP balances are consistent with deposits/withdrawals. Swap output must respect min_out (slippage guard). Typical failures Decimals mismatch leading to wrong pricing. Vault spoof (attacker passes their own token account as \u201cvault\u201d). Fee leakage due to inconsistent rounding or missing checks. Missing min_out leading to user value loss on volatile price",
+    "source": "chapters/tech_06f_build_an_amm_en"
+  },
+  {
+    "id": "tech_06f_build_an_amm_en_chunk_4",
+    "text": "movement. Module validation Pool init, deposit, withdraw, swap implemented with explicit invariants. Negative tests exist for vault spoof, mint mismatch, min_out violations, and fee edge cases. QA is green; navigation and bilingual routing are correct. Start N1 \u2014 Pool + LP invariants Continue N2 \u2014 Swaps + fees + hardening",
+    "source": "chapters/tech_06f_build_an_amm_en"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_chunk_1",
+    "text": "INFRA Validator & Ops Culture R\u00e9seau & Performance Ce module est une ouverture essentielle. Sans \u00eatre SRE, un builder doit comprendre sur quoi tourne son code. Validator, RPC, Latence, Compute Units : ma\u00eetrisez votre environnement d'ex\u00e9cution. Objectifs Culture Diagnostiquer : Bug Code vs Probl\u00e8me Infra. Optimiser : Compute Units & Priority Fees. Vocabulaire : Slots, Forks, Epochs. La \"Food Chain\" de la Donn\u00e9e Validator Consensus & Vote RPC Node Votre Gateway Indexer History & Query \"Le builder",
+    "source": "chapters/tech_06g_validator_infra_overview"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_chunk_2",
+    "text": "parle au RPC. Le RPC parle au Cluster. L'Indexer observe le tout.\" 02 Performance : Ce que le Builder doit savoir Compute Units (CU) Chaque instruction a un \"co\u00fbt\". Trop de logs, trop de CPIs, ou de la mauvaise crypto = Transaction Failed (ComputeBudgetExceeded). Priority Fees Quand le r\u00e9seau est congestionn\u00e9, payer plus (Micro-lamports) permet de passer devant. C'est une ench\u00e8re de blockspace. Logs Pollution `msg!` co\u00fbte cher (syscall). En prod, on log l'essentiel, pas le debug. Attention aux",
+    "source": "chapters/tech_06g_validator_infra_overview"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_chunk_3",
+    "text": "boucles infinies simul\u00e9es It\u00e9rer sur un grand nombre de comptes dans une seule transaction est un anti-pattern sur Solana. La limite de CU vous rattrapera. Pr\u00e9f\u00e9rez une architecture \"off-chain indexer + stateless logic\" ou du chunking. 03 Ops & Livrables Bonnes Pratiques Ops D\u00e9ploiements : Toujours v\u00e9rifier le buffer authority avant upgrade. Rollback : Avoir un plan (e.g., remettre le binaire pr\u00e9c\u00e9dent) si la migration state \u00e9choue. Post-Mortem : Si \u00e7a casse, on \u00e9crit pourquoi. Sans bl\u00e2me, mais",
+    "source": "chapters/tech_06g_validator_infra_overview"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_chunk_4",
+    "text": "avec pr\u00e9cision. Exercice : Panne S\u00e8che \"Vos utilisateurs se plaignent que 'le site ne marche pas'. Votre RPC r\u00e9pond timeout. Le validateur semble up. Que faites-vous ?\" 1. Switcher de RPC (Failover). 2. V\u00e9rifier Solana Beach / Solscan (Cluster status). 3. Si Cluster downetc. on attend (et on communique). Livrable Final Fiche \"Infra pour Builders\" (1 page). Termes, Erreurs fr\u00e9quentes, Checklist.",
+    "source": "chapters/tech_06g_validator_infra_overview"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_en_chunk_1",
+    "text": "INFRA Validator & Ops Network Culture & Performance This module is an essential opening. Without being an SRE, a builder must understand what their code runs on. Validator, RPC, Latency, Compute Units: master your execution environment. Culture Objectives Diagnose: Code Bug vs Infra Issue. Optimize: Compute Units & Priority Fees. Vocabulary: Slots, Forks, Epochs. The Data \"Food Chain\" Validator Consensus & Vote RPC Node Your Gateway Indexer History & Query \"The builder speaks to the RPC. The",
+    "source": "chapters/tech_06g_validator_infra_overview_en"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_en_chunk_2",
+    "text": "RPC speaks to the Cluster. The Indexer observes it all.\" 02 Performance: What the Builder Must Know Compute Units (CU) Every instruction has a \"cost\". Too many logs, too many CPIs, or bad crypto = Transaction Failed (ComputeBudgetExceeded). Priority Fees When the network is congested, paying more (Micro-lamports) lets you cut the line. It's a blockspace auction. Logs Pollution `msg!` is expensive (syscall). In prod, log the essential, not debug info. Beware of simulated infinite loops Iterating",
+    "source": "chapters/tech_06g_validator_infra_overview_en"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_en_chunk_3",
+    "text": "over a large number of accounts in a single transaction is an anti-pattern on Solana. The CU limit will catch you. Prefer an \"off-chain indexer + stateless logic\" architecture or chunking. 03 Ops & Deliverables Ops Best Practices Deployments: Always check buffer authority before upgrade. Rollback: Have a plan (e.g., revert to previous binary) if state migration fails. Post-Mortem: If it breaks, write down why. No blame, but precision. Exercise: Outage \"Your users complain 'the site is down'.",
+    "source": "chapters/tech_06g_validator_infra_overview_en"
+  },
+  {
+    "id": "tech_06g_validator_infra_overview_en_chunk_4",
+    "text": "Your RPC times out. The validator seems up. What do you do?\" 1. Switch RPC (Failover). 2. Check Solana Beach / Solscan (Cluster status). 3. If Cluster is down, wait (and communicate). Final Deliverable \"Infra for Builders\" Sheet (1 page). Terms, Common Errors, Checklist.",
+    "source": "chapters/tech_06g_validator_infra_overview_en"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_1",
+    "text": "Anchor (N1) \u2014 Introduction et structure d\u2019un programme Anchor est un framework qui standardise la mani\u00e8re d\u2019\u00e9crire des programmes Solana : gestion des comptes, s\u00e9rialisation, validation des contraintes, g\u00e9n\u00e9ration d\u2019IDL, et outillage de tests. L\u2019objectif n\u2019est pas \u201cd\u2019ajouter de la magie\u201d, mais de r\u00e9duire les erreurs r\u00e9p\u00e9titives et de rendre un programme plus auditable. Ce que tu sauras faire apr\u00e8s ce chapitre Expliquer le r\u00f4le d\u2019Anchor dans un projet Solana. Identifier la structure d\u2019un",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_2",
+    "text": "workspace Anchor et ses fichiers cl\u00e9s. \u00c9crire une instruction simple et comprendre le flux \u201ccomptes \u2192 logique \u2192 \u00e9tat\u201d. Comprendre le lien \u201ccode Rust \u2194 IDL \u2194 client TypeScript\u201d. 1. Pourquoi Anchor Comptes : d\u00e9claration typ\u00e9e des comptes attendus par une instruction. Contraintes : v\u00e9rifications d\u00e9claratives (owner, seeds, mutabilit\u00e9, signer, rent, etc.). S\u00e9rialisation : conventions coh\u00e9rentes (Borsh) et discriminants d\u2019instructions. IDL : interface g\u00e9n\u00e9r\u00e9e qui d\u00e9crit instructions, comptes,",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_3",
+    "text": "\u00e9v\u00e9nements, erreurs. Tests : environnement TypeScript standard, provider, wallets, simulateur local. Vue d\u2019ensemble : tu \u00e9cris le programme en Rust, Anchor g\u00e9n\u00e8re une IDL, et le client TypeScript peut consommer cette IDL pour appeler les instructions de mani\u00e8re s\u00fbre. 2. Structure d\u2019un workspace Anchor Un workspace Anchor contient g\u00e9n\u00e9ralement plusieurs dossiers. Les noms exacts peuvent varier selon la version, mais l\u2019id\u00e9e est stable : programs/ : code Rust des programmes (un dossier par",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_4",
+    "text": "programme). tests/ : tests TypeScript (ex\u00e9cution via l\u2019outil Anchor). migrations/ : scripts de d\u00e9ploiement (selon les setups). Anchor.toml : configuration (cluster, program IDs, provider, scripts). target/idl/ : sortie de g\u00e9n\u00e9ration des IDL. Fichier cl\u00e9 : Anchor.toml Il fixe le provider (wallet), le cluster (localnet, devnet, etc.), et les Program IDs. En pratique, un \u201cmauvais Program ID\u201d est une source classique de bugs de tests. On le traitera explicitement en N3. 3. Le mod\u00e8le Anchor :",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_5",
+    "text": "Accounts + Instruction Avec Anchor, une instruction est typiquement une fonction Rust annot\u00e9e, et ses comptes sont d\u00e9crits dans une structure associ\u00e9e. Les contraintes servent \u00e0 rejeter t\u00f4t les appels invalides. Mini-exemple (conceptuel) #[derive(Accounts)] pub struct Initialize<'info> { #[account(init, payer = user, space = 8 + 8)] pub state: Account<'info, State>, #[account(mut)] pub user: Signer<'info>, pub system_program: Program<'info, System>, } pub fn initialize(ctx: Context<Initialize>,",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_6",
+    "text": "value: u64) -> Result<()> { ctx.accounts.state.value = value; Ok(()) } Id\u00e9es \u00e0 retenir : init : cr\u00e9ation d\u2019un compte, avec espace et payer. Signer : la signature est exig\u00e9e. Program<System> : le programme syst\u00e8me est requis pour cr\u00e9er des comptes. 8 + \u2026 : l\u2019overhead Anchor (discriminator) plus les champs s\u00e9rialis\u00e9s. 4. Check-list \u201caudit-grade\u201d pour N1 Les comptes attendus par une instruction sont explicitement list\u00e9s . Chaque compte modifi\u00e9 est marqu\u00e9 mut (sinon rejet). Les cr\u00e9ations de comptes",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_chunk_7",
+    "text": "utilisent payer et space correctement. Les contraintes (owner, seeds, signer) sont au plus pr\u00e8s de la d\u00e9claration. Dans N2, on se focalise sur l\u2019IDL : comment elle est g\u00e9n\u00e9r\u00e9e, comment elle d\u00e9crit l\u2019interface, et comment un client l\u2019exploite.",
+    "source": "chapters/tech_06h_anchor_n1"
+  },
+  {
+    "id": "tech_06h_anchor_n1_en_chunk_1",
+    "text": "Anchor (N1) \u2014 Intro and program layout Anchor standardizes how to write Solana programs: account typing, constraint validation, serialization, IDL generation, and test tooling. The goal is not \u201cmagic\u201d, but fewer repetitive mistakes and more auditable programs. What you can do after this chapter Explain Anchor\u2019s role in a Solana project. Identify an Anchor workspace layout and key files. Write a simple instruction and read the \u201caccounts \u2192 logic \u2192 state\u201d flow. Understand the bridge \u201cRust code \u2194",
+    "source": "chapters/tech_06h_anchor_n1_en"
+  },
+  {
+    "id": "tech_06h_anchor_n1_en_chunk_2",
+    "text": "IDL \u2194 TypeScript client\u201d. 1. Why Anchor Accounts : typed declaration of the accounts expected by an instruction. Constraints : declarative checks (owner, seeds, mutability, signer, rent, etc.). Serialization : consistent conventions (Borsh) and instruction discriminators. IDL : generated interface describing instructions, accounts, events, errors. Tests : standard TypeScript environment, provider, wallets, local validator. Big picture: you write the Rust program, Anchor generates an IDL, and the",
+    "source": "chapters/tech_06h_anchor_n1_en"
+  },
+  {
+    "id": "tech_06h_anchor_n1_en_chunk_3",
+    "text": "TypeScript client consumes the IDL to call instructions safely. 2. Anchor workspace structure An Anchor workspace usually has several folders. Names may vary by version, but the idea is stable: programs/ : Rust code for programs (one folder per program). tests/ : TypeScript tests (executed via Anchor tooling). migrations/ : deployment scripts (depending on setup). Anchor.toml : configuration (cluster, program IDs, provider, scripts). target/idl/ : IDL output folder. Key file: Anchor.toml It sets",
+    "source": "chapters/tech_06h_anchor_n1_en"
+  },
+  {
+    "id": "tech_06h_anchor_n1_en_chunk_4",
+    "text": "the provider (wallet), cluster (localnet, devnet, etc.), and Program IDs. A wrong Program ID is a classic source of failing tests. We tackle it explicitly in N3. 3. The Anchor model: Accounts + Instruction In Anchor, an instruction is a Rust function with annotations; its accounts are described in a matching struct. Constraints reject invalid calls early. Mini example (conceptual) #[derive(Accounts)] pub struct Initialize<'info> { #[account(init, payer = user, space = 8 + 8)] pub state:",
+    "source": "chapters/tech_06h_anchor_n1_en"
+  },
+  {
+    "id": "tech_06h_anchor_n1_en_chunk_5",
+    "text": "Account<'info, State>, #[account(mut)] pub user: Signer<'info>, pub system_program: Program<'info, System>, } pub fn initialize(ctx: Context<Initialize>, value: u64) -> Result<()> { ctx.accounts.state.value = value; Ok(()) } Key ideas: init : create an account with space and payer. Signer : signature required. Program<System> : system program required for account creation. 8 + \u2026 : Anchor overhead (discriminator) plus serialized fields. 4. Audit-grade checklist for N1 Instruction accounts are",
+    "source": "chapters/tech_06h_anchor_n1_en"
+  },
+  {
+    "id": "tech_06h_anchor_n1_en_chunk_6",
+    "text": "explicitly listed . Any account modified is marked mut (otherwise rejected). Account creations use payer and space properly. Constraints (owner, seeds, signer) sit close to the declaration . In N2, we focus on the IDL: how it is generated, what it describes, and how a client consumes it.",
+    "source": "chapters/tech_06h_anchor_n1_en"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_1",
+    "text": "Anchor (N2) \u2014 IDL : r\u00f4le, g\u00e9n\u00e9ration, lecture, usage c\u00f4t\u00e9 client L\u2019IDL (Interface Description Language) est la \u201ccarte d\u2019identit\u00e9\u201d d\u2019un programme Anchor : elle d\u00e9crit ses instructions, leurs param\u00e8tres, les comptes attendus, les types, les \u00e9v\u00e9nements et les erreurs. Elle sert d\u2019interface stable entre le programme Rust et les clients (TypeScript, autres SDK). Objectifs Comprendre ce que l\u2019IDL garantit (et ce qu\u2019elle ne garantit pas). Savoir o\u00f9 elle est g\u00e9n\u00e9r\u00e9e et comment la maintenir coh\u00e9rente",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_2",
+    "text": "avec le code. Savoir lire une instruction dans l\u2019IDL (accounts, args, types). Comprendre comment le client TypeScript utilise l\u2019IDL pour construire les transactions. 1. O\u00f9 est l\u2019IDL, quand est-elle g\u00e9n\u00e9r\u00e9e En workflow standard, l\u2019IDL est produite lors des \u00e9tapes de build et est d\u00e9pos\u00e9e dans un dossier de sortie, souvent target/idl . Le point essentiel : IDL et code doivent rester synchronis\u00e9s . Toute divergence cr\u00e9e des erreurs c\u00f4t\u00e9 client (mauvais noms d\u2019instructions, types divergents, comptes",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_3",
+    "text": "manquants). Principe op\u00e9rationnel Modifier le programme Rust. Relancer la g\u00e9n\u00e9ration (build / test). Consommer l\u2019IDL mise \u00e0 jour c\u00f4t\u00e9 client. 2. Comment lire une instruction dans l\u2019IDL Une entr\u00e9e d\u2019instruction ressemble conceptuellement \u00e0 ceci : { \"name\": \"initialize\", \"accounts\": [ { \"name\": \"state\", \"isMut\": true, \"isSigner\": false }, { \"name\": \"user\", \"isMut\": true, \"isSigner\": true }, { \"name\": \"systemProgram\", \"isMut\": false, \"isSigner\": false } ], \"args\": [ { \"name\": \"value\", \"type\": \"u64\"",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_4",
+    "text": "} ] } Interpr\u00e9tation : accounts : l\u2019ordre est significatif c\u00f4t\u00e9 client (construction de l\u2019appel). isMut : le programme annonce qu\u2019il va modifier le compte. isSigner : la signature est requise (le wallet doit signer). args : param\u00e8tres s\u00e9rialis\u00e9s et envoy\u00e9s dans l\u2019instruction. 3. Ce que l\u2019IDL garantit, et ses limites Garanti : interface d\u00e9crite (noms, types, comptes, ordre, mutabilit\u00e9, signer). Non garanti : logique m\u00e9tier interne (invariants, r\u00e8gles \u00e9conomiques, acc\u00e8s conditionnels). Non garanti",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_5",
+    "text": ": contraintes dynamiques (ex : \u201cce compte doit avoir telle valeur\u201d). Un audit solide ne se contente pas de l\u2019IDL : il relie l\u2019IDL au code Rust, v\u00e9rifie les contraintes, les seeds, les v\u00e9rifications d\u2019autorisation, et l\u2019ensemble des chemins d\u2019erreur. 4. Usage c\u00f4t\u00e9 TypeScript : Program + methods Le client TypeScript charge l\u2019IDL et construit un objet Program. Ensuite, il appelle les instructions via une API \u201cm\u00e9thode\u201d typ\u00e9e. Conceptuellement : // Conceptuel : d\u00e9pend du setup Anchor/TS const program",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_6",
+    "text": "= new Program(idl, programId, provider); await program.methods .initialize(new BN(42)) .accounts({ state, user: provider.wallet.publicKey, systemProgram: SystemProgram.programId, }) .rpc(); Remarque : ce confort d\u00e9pend de l\u2019IDL. Si l\u2019IDL est obsol\u00e8te, l\u2019appel \u00e9choue ou construit un message incoh\u00e9rent. Dans N3, on verra comment stabiliser les tests TypeScript et diagnostiquer rapidement les erreurs. 5. Check-list \u201caudit-grade\u201d pour N2 IDL r\u00e9g\u00e9n\u00e9r\u00e9e et coh\u00e9rente avec le code (m\u00eames noms",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_chunk_7",
+    "text": "d\u2019instructions et types). Ordre des comptes compris et respect\u00e9 c\u00f4t\u00e9 client. Mutabilit\u00e9 et signature justifi\u00e9es (le minimum n\u00e9cessaire). Erreurs et \u00e9v\u00e9nements explicit\u00e9s (utile pour les tests et l\u2019observabilit\u00e9).",
+    "source": "chapters/tech_06i_anchor_n2"
+  },
+  {
+    "id": "tech_06i_anchor_n2_en_chunk_1",
+    "text": "Anchor (N2) \u2014 IDL: role, generation, reading, client usage The IDL (Interface Description Language) is the \u201cidentity card\u201d of an Anchor program: it describes instructions, parameters, expected accounts, types, events, and errors. It is the stable interface between the Rust program and clients (TypeScript or other SDKs). Objectives Understand what the IDL guarantees (and what it does not). Know where it is generated and how to keep it consistent with the code. Read an instruction in the IDL",
+    "source": "chapters/tech_06i_anchor_n2_en"
+  },
+  {
+    "id": "tech_06i_anchor_n2_en_chunk_2",
+    "text": "(accounts, args, types). See how a TypeScript client uses the IDL to build transactions. 1. Where the IDL lives and when it is generated In the standard workflow, the IDL is produced during build steps and stored in an output folder, often target/idl . Key point: IDL and code must stay in sync . Any divergence creates client-side failures (wrong instruction names, mismatched types, missing accounts). Operational principle Modify the Rust program. Regenerate (build / test). Consume the updated",
+    "source": "chapters/tech_06i_anchor_n2_en"
+  },
+  {
+    "id": "tech_06i_anchor_n2_en_chunk_3",
+    "text": "IDL on the client side. 2. How to read an instruction in the IDL An instruction entry conceptually looks like this: { \"name\": \"initialize\", \"accounts\": [ { \"name\": \"state\", \"isMut\": true, \"isSigner\": false }, { \"name\": \"user\", \"isMut\": true, \"isSigner\": true }, { \"name\": \"systemProgram\", \"isMut\": false, \"isSigner\": false } ], \"args\": [ { \"name\": \"value\", \"type\": \"u64\" } ] } Reading guide: accounts : order matters on the client side when building the call. isMut : the program declares it will",
+    "source": "chapters/tech_06i_anchor_n2_en"
+  },
+  {
+    "id": "tech_06i_anchor_n2_en_chunk_4",
+    "text": "mutate the account. isSigner : signature required (wallet must sign). args : serialized parameters passed to the instruction. 3. What the IDL guarantees, and its limits Guaranteed : described interface (names, types, accounts, order, mutability, signer). Not guaranteed : internal business logic (invariants, economic rules, conditional access). Not guaranteed : dynamic constraints (e.g., \u201cthis account must have such value\u201d). A solid audit links the IDL to the Rust code, checks constraints, seeds,",
+    "source": "chapters/tech_06i_anchor_n2_en"
+  },
+  {
+    "id": "tech_06i_anchor_n2_en_chunk_5",
+    "text": "authorization rules, and every error path. 4. TypeScript side: Program + methods The TypeScript client loads the IDL and builds a Program object, then calls instructions via a typed \u201cmethods\u201d API. Conceptually: // Conceptual: depends on the Anchor/TS setup const program = new Program(idl, programId, provider); await program.methods .initialize(new BN(42)) .accounts({ state, user: provider.wallet.publicKey, systemProgram: SystemProgram.programId, }) .rpc(); Reminder: this comfort depends on the",
+    "source": "chapters/tech_06i_anchor_n2_en"
+  },
+  {
+    "id": "tech_06i_anchor_n2_en_chunk_6",
+    "text": "IDL. If the IDL is stale, the call fails or builds a wrong message. In N3, we stabilize TypeScript tests and diagnose errors quickly. 5. Audit-grade checklist for N2 IDL regenerated and consistent with code (same instruction names and types). Account order understood and respected client side. Mutability and signer justified (minimum necessary). Errors and events made explicit (useful for tests and observability).",
+    "source": "chapters/tech_06i_anchor_n2_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_1",
+    "text": "Anchor (N3) \u2014 Tests TypeScript : setup, provider, fixtures, tests pos/n\u00e9gatifs Les tests TypeScript sont la couche qui v\u00e9rifie que l\u2019IDL, la logique Rust, la gestion des comptes et les contraintes se comportent comme attendu. Un bon batch de tests comprend des cas positifs (chemin nominal) et des cas n\u00e9gatifs (acc\u00e8s refus\u00e9, seeds invalides, comptes non mutables, absence de signature). Objectifs Comprendre le r\u00f4le du provider (connexion, wallet, cluster). Structurer des fixtures (comptes, PDAs,",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_2",
+    "text": "helpers) pour des tests reproductibles. \u00c9crire au moins un test positif et un test n\u00e9gatif \u201caudit-grade\u201d. Diagnostiquer rapidement une erreur classique (Program ID, comptes, signer, mut). 1. Provider : la pi\u00e8ce ma\u00eetresse Le provider regroupe : connexion (Connection), wallet (payer/signature), et options de confirmation. En tests, il est souvent initialis\u00e9 depuis l\u2019environnement Anchor (local validator). Un point critique : le Program ID doit correspondre au programme r\u00e9ellement d\u00e9ploy\u00e9 sur le",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_3",
+    "text": "cluster de test. Sympt\u00f4me fr\u00e9quent Erreur \u201cProgram failed to complete\u201d ou \u201cunknown program\u201d Cause typique : Program ID incoh\u00e9rent entre Anchor.toml, keypair du programme et IDL 2. Fixtures : rendre les tests d\u00e9terministes Une fixture est une fonction utilitaire qui pr\u00e9pare l\u2019\u00e9tat : cr\u00e9ation de comptes, d\u00e9rivation de PDA, airdrop, initialisation. L\u2019objectif est d\u2019\u00e9viter la duplication et de rendre la lecture des tests claire. Exemple conceptuel // Conceptuel : helpers async function",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_4",
+    "text": "makeStateAccount(program, user) { // d\u00e9river une adresse, cr\u00e9er/initialiser, retourner { statePda, bump } return { statePda, bump }; } Une bonne fixture doit aussi g\u00e9rer les \u00e9checs : si un compte existe d\u00e9j\u00e0, elle doit soit le r\u00e9utiliser proprement, soit isoler les tests (nouveau PDA par test). 3. Test positif : chemin nominal Un test positif v\u00e9rifie que l\u2019instruction fonctionne, modifie l\u2019\u00e9tat attendu, et retourne sans erreur. Exemple conceptuel : it(\"initialize sets the value\", async () => {",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_5",
+    "text": "const { statePda } = await makeStateAccount(program, provider.wallet.publicKey); await program.methods .initialize(new BN(42)) .accounts({ state: statePda, user: provider.wallet.publicKey, systemProgram: SystemProgram.programId, }) .rpc(); const state = await program.account.state.fetch(statePda); expect(state.value.toNumber()).to.equal(42); }); 4. Test n\u00e9gatif : \u00e9chec attendu (audit-grade) Un test n\u00e9gatif doit \u00e9chouer pour la bonne raison. Il ne suffit pas de \u201ccatch une erreur\u201d. Il faut",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_6",
+    "text": "v\u00e9rifier un signal exploitable : code d\u2019erreur Anchor, message, ou motif stable. Exemple conceptuel : absence de signature it(\"rejects when signer is missing\", async () => { let failed = false; try { await program.methods .initialize(new BN(1)) .accounts({ state: statePda, user: someOtherPublicKey, // pas le wallet signer systemProgram: SystemProgram.programId, }) .rpc(); } catch (e) { failed = true; // v\u00e9rifier un motif stable : code ou message // expect(String(e)).to.contain(\"Signature",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_7",
+    "text": "verification failed\"); } expect(failed).to.equal(true); }); Autres tests n\u00e9gatifs pertinents : Seeds invalides (PDA mal d\u00e9riv\u00e9e). Owner incorrect (compte appartenant \u00e0 un autre programme). Compte non mutable alors que l\u2019instruction \u00e9crit dedans. Acc\u00e8s non autoris\u00e9 (contrainte d\u2019autorisation manquante ou viol\u00e9e). 5. Check-list \u201caudit-grade\u201d pour N3 Au moins un test positif et un test n\u00e9gatif r\u00e9ellement discriminants. Fixtures r\u00e9utilisables, pas de duplication inutile. Diagnostics rapides :",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_chunk_8",
+    "text": "Program ID, comptes, signer, mut, seeds. Assertions sur l\u2019\u00e9tat on-chain (fetch) et sur les erreurs (motifs stables). Avec ces trois chapitres, tu as la base pour \u00e9crire un programme Anchor \u201coutill\u00e9\u201d : interface claire (IDL) et tests robustes. Le pas suivant naturel est d\u2019introduire des patterns (PDA, constraints avanc\u00e9es, events) et des r\u00e8gles de s\u00e9curit\u00e9.",
+    "source": "chapters/tech_06j_anchor_n3"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_1",
+    "text": "Anchor (N3) \u2014 TypeScript tests: setup, provider, fixtures, pos/neg TypeScript tests verify that the IDL, Rust logic, account handling, and constraints behave as expected. A good suite mixes positive paths (nominal) and negative paths (denied access, wrong seeds, missing signer, non-mutable account). Objectives Understand the provider (connection, wallet, cluster). Structure fixtures (accounts, PDAs, helpers) for reproducible tests. Write at least one positive and one \u201caudit-grade\u201d negative",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_2",
+    "text": "test. Diagnose classic errors fast (Program ID, accounts, signer, mutability). 1. Provider: the core piece The provider bundles connection (Connection), wallet (payer/signature), and confirmation options. In tests, it often uses the Anchor local validator. Critical point: the Program ID must match the program actually deployed on the test cluster. Frequent symptom Error \u201cProgram failed to complete\u201d or \u201cunknown program\u201d Typical cause: Program ID mismatch across Anchor.toml, program keypair, and",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_3",
+    "text": "IDL 2. Fixtures: make tests deterministic A fixture is a helper that prepares state: account creation, PDA derivation, airdrop, initialization. Goal: avoid duplication and keep tests readable. Conceptual helper // Conceptual helper async function makeStateAccount(program, user) { // derive an address, create/initialize, return { statePda, bump } return { statePda, bump }; } A good fixture also handles failures: if an account already exists, it should either reuse it cleanly or isolate tests (new",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_4",
+    "text": "PDA per test). 3. Positive test: nominal path A positive test checks the instruction works, updates state as expected, and returns without error. Conceptual example: it(\"initialize sets the value\", async () => { const { statePda } = await makeStateAccount(program, provider.wallet.publicKey); await program.methods .initialize(new BN(42)) .accounts({ state: statePda, user: provider.wallet.publicKey, systemProgram: SystemProgram.programId, }) .rpc(); const state = await",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_5",
+    "text": "program.account.state.fetch(statePda); expect(state.value.toNumber()).to.equal(42); }); 4. Negative test: expected failure (audit-grade) A negative test must fail for the right reason. It\u2019s not enough to \u201ccatch an error\u201d; we need a stable signal: Anchor error code, message, or reliable pattern. Example: missing signer it(\"rejects when signer is missing\", async () => { let failed = false; try { await program.methods .initialize(new BN(1)) .accounts({ state: statePda, user: someOtherPublicKey, //",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_6",
+    "text": "not the signer wallet systemProgram: SystemProgram.programId, }) .rpc(); } catch (e) { failed = true; // check a stable pattern: code or message // expect(String(e)).to.contain(\"Signature verification failed\"); } expect(failed).to.equal(true); }); Other relevant negative tests: Invalid seeds (wrong PDA derivation). Wrong owner (account owned by another program). Non-mutable account when the instruction writes to it. Unauthorized access (missing or broken authorization constraint). 5. Audit-grade",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_06j_anchor_n3_en_chunk_7",
+    "text": "checklist for N3 At least one positive and one truly discriminating negative test. Reusable fixtures, no unnecessary duplication. Fast diagnostics: Program ID, accounts, signer, mutability, seeds. Assertions on on-chain state (fetch) and errors (stable patterns). With these three chapters you have the base for a well-tooled Anchor program: clear interface (IDL) and robust tests. Next natural step: patterns (PDA, advanced constraints, events) and security rules.",
+    "source": "chapters/tech_06j_anchor_n3_en"
+  },
+  {
+    "id": "tech_07_evm_hub_chunk_1",
+    "text": "EVM Track B \u2014 Ing\u00e9nieur EVM (Solidity / Foundry) Standard industriel, approche infrastructure-first : ma\u00eetrise du stockage, optimisation gas, s\u00e9curit\u00e9 et CI/CD solides. Philosophie Positionnement Pas de copie-coller : compr\u00e9hension bas niveau (storage slots, calldata, memory), gas optimization et upgrades s\u00fbrs. Audit-readiness en permanence. Test-first (Foundry, fuzzing). Gas golfing cibl\u00e9 (inline assembly si besoin). S\u00e9curit\u00e9 \u00ab don't trust, verify \u00bb. Cha\u00eene de valeur EVM flowchart LR",
+    "source": "chapters/tech_07_evm_hub"
+  },
+  {
+    "id": "tech_07_evm_hub_chunk_2",
+    "text": "A[Solidity] --> B[\"Tests (Foundry)\"] B --> C[\"Security (Slither)\"] C --> D[\"Deploy (Scripts)\"] style A fill:#1e293b,stroke:#fff,stroke-width:1px,color:#fff style B fill:#312e81,stroke:#6366f1,stroke-width:1px,color:#a5b4fc style C fill:#881337,stroke:#f43f5e,stroke-width:1px,color:#fda4af style D fill:#064e3b,stroke:#14F195,stroke-width:1px,color:#14F195 Structure p\u00e9dagogique (16 semaines) Module Sem Objectif Livrable 1. Basics 13-15 EVM internals, slots, calldata Vault natif 2. Pro Env 16-18",
+    "source": "chapters/tech_07_evm_hub"
+  },
+  {
+    "id": "tech_07_evm_hub_chunk_3",
+    "text": "Foundry mastery + CI Pipeline CI 3. Standards 19-21 ERC20/721 Token system 4. dApp 22-24 Int\u00e9gration Web3 Full-stack dApp 5. Scaling 25-26 L2 & upgrades UUPS proxy 6. Hardening 27-28 S\u00e9curit\u00e9 Audit report Module 1 : Basics EVM (slots, memory, calldata). Lab : Vault s\u00e9curis\u00e9 D\u00e9p\u00f4t/retrait avec r\u00f4les. Module 5 : L2 Scaling Rollups (Optimistic/ZK) et proxies. Lab : UUPS upgrade D\u00e9ployer V1 puis upgrade V2 sans perte de storage. S\u00e9curit\u00e9 & stack Checklist s\u00e9curit\u00e9 EVM Reentrancy",
+    "source": "chapters/tech_07_evm_hub"
+  },
+  {
+    "id": "tech_07_evm_hub_chunk_4",
+    "text": "Checks-Effects-Interactions Slither Access Control Modifiers corrects Review Arithmetic Over/underflow legacy Fuzzing Framework Foundry (Forge, Cast) Libs OpenZeppelin Client Viem, Wagmi Analysis Slither, Aderyn Profil de sortie Pr\u00eat pour une \u00e9quipe Core Protocol : \u00e9crit du code qui g\u00e8re des fonds, s\u00e9curise l\u2019upgrade et optimise le gas. Missions types Loop staking sur lending. Migration L1 \u2192 L2 (bridge). Scripts de d\u00e9ploiement avec allowlist. Matrice comp\u00e9tences Solidity expert Gas optimis\u00e9",
+    "source": "chapters/tech_07_evm_hub"
+  },
+  {
+    "id": "tech_07_evm_hub_chunk_5",
+    "text": "Testing expert Coverage haut Ops autonome D\u00e9ploiements v\u00e9rifi\u00e9s",
+    "source": "chapters/tech_07_evm_hub"
+  },
+  {
+    "id": "tech_07_evm_hub_en_chunk_1",
+    "text": "EVM Track B \u2014 EVM Engineer (Solidity / Foundry) Industry standard, infrastructure-first: storage mastery, gas optimization, security, and solid CI/CD. Philosophy Positioning No copy-paste: low-level understanding (storage slots, calldata, memory), gas optimization, safe upgrades. Always audit-ready. Test-first (Foundry, fuzzing). Targeted gas golfing (inline assembly when needed). Security mindset: \u201cdon\u2019t trust, verify\u201d. EVM value chain flowchart LR A[Solidity] --> B[\"Tests (Foundry)\"] B -->",
+    "source": "chapters/tech_07_evm_hub_en"
+  },
+  {
+    "id": "tech_07_evm_hub_en_chunk_2",
+    "text": "C[\"Security (Slither)\"] C --> D[\"Deploy (Scripts)\"] style A fill:#1e293b,stroke:#fff,stroke-width:1px,color:#fff style B fill:#312e81,stroke:#6366f1,stroke-width:1px,color:#a5b4fc style C fill:#881337,stroke:#f43f5e,stroke-width:1px,color:#fda4af style D fill:#064e3b,stroke:#14F195,stroke-width:1px,color:#14F195 Learning structure (16 weeks) Module Week Objective Deliverable 1. Basics 13-15 EVM internals, slots, calldata Native vault 2. Pro Env 16-18 Foundry mastery + CI CI pipeline 3. Standards",
+    "source": "chapters/tech_07_evm_hub_en"
+  },
+  {
+    "id": "tech_07_evm_hub_en_chunk_3",
+    "text": "19-21 ERC20/721 Token system 4. dApp 22-24 Web3 integration Full-stack dApp 5. Scaling 25-26 L2 & upgrades UUPS proxy 6. Hardening 27-28 Security Audit report Module 1: Basics EVM (slots, memory, calldata). Lab: Secure vault Deposit/withdraw with roles. Module 5: L2 Scaling Rollups (Optimistic/ZK) and proxies. Lab: UUPS upgrade Deploy V1 then upgrade to V2 without storage loss. Security & stack EVM security checklist Reentrancy Checks-Effects-Interactions Slither Access Control Correct modifiers",
+    "source": "chapters/tech_07_evm_hub_en"
+  },
+  {
+    "id": "tech_07_evm_hub_en_chunk_4",
+    "text": "Review Arithmetic Legacy over/underflow Fuzzing Framework Foundry (Forge, Cast) Libs OpenZeppelin Client Viem, Wagmi Analysis Slither, Aderyn Graduation profile Ready for a Core Protocol team: writes code that safeguards funds, secures upgrades, and optimizes gas. Typical missions Loop staking on lending. L1 \u2192 L2 migration (bridge). Deployment scripts with allowlist. Competency matrix Solidity expert Gas optimized Testing expert High coverage Ops autonomous Verified deployments",
+    "source": "chapters/tech_07_evm_hub_en"
+  },
+  {
+    "id": "tech_08_capstones_chunk_1",
+    "text": "Capstones Projets signatures (Mainnet-Ready) Standards studio : produits auditables, s\u00e9curit\u00e9 prioritaire, livrables reproductibles. CAPSTONES PROJECTS La validation des comp\u00e9tences ne se fait pas par QCM, mais par la preuve de travail (\"Proof of Work\"). Chaque niveau se conclut par un livrable tangible et auditable. Niveau 1 The Rust CLI Explorer D\u00e9veloppement d'un outil en ligne de commande (CLI) pur Rust, sans framework. L'outil doit se connecter au RPC Solana, parser manuellement les",
+    "source": "chapters/tech_08_capstones"
+  },
+  {
+    "id": "tech_08_capstones_chunk_2",
+    "text": "donn\u00e9es binaires de comptes sp\u00e9cifiques et afficher un \u00e9tat structur\u00e9. Rust Ownership Borsh Deserialization RPC Integration Livrables attendus Code source Rust (Crates.io standard) Gestion d'erreurs (Result/Option) Z\u00e9ro `unwrap()` en production Documentation technique (Cargo doc) Niveau 2 Full Stack DeFi dApp Conception et d\u00e9ploiement d'un protocole d\u00e9centralis\u00e9 complet (ex: Crowdfunding avec Escrow, ou DAO de vote). Le projet doit inclure le Smart Contract (Anchor), les tests unitaires et une",
+    "source": "chapters/tech_08_capstones"
+  },
+  {
+    "id": "tech_08_capstones_chunk_3",
+    "text": "interface utilisateur React connect\u00e9e. Anchor Framework CPI (Composability) PDA Management Livrables attendus Programme d\u00e9ploy\u00e9 (Devnet) Tests TS (> 80% coverage) Frontend fonctionnel (Wallet Adapter) IDL public Niveau 3 Rapport d'Audit Technique Simulation d'une mission de \"Red Teaming\". L'\u00e9tudiant doit analyser un protocole existant (ou fourni), identifier les vecteurs d'attaque potentiels et produire un rapport professionnel. Exploit Writing Vulnerability Assessment Gas Optimization Livrables",
+    "source": "chapters/tech_08_capstones"
+  },
+  {
+    "id": "tech_08_capstones_chunk_4",
+    "text": "attendus Rapport PDF standard industriel Classification (High/Med/Low) PoC (Proof of Concept) des exploits Recommandations de correctifs",
+    "source": "chapters/tech_08_capstones"
+  },
+  {
+    "id": "tech_08_capstones_en_chunk_1",
+    "text": "Capstones Signature projects (Mainnet-Ready) Studio standards: auditable products, security first, reproducible deliverables. CAPSTONE PROJECTS Competency validation is not multiple choice, but Proof of Work. Each level concludes with a tangible and auditable deliverable. Level 1 The Rust CLI Explorer Development of a pure Rust command-line tool (CLI), framework-free. The tool must connect to the Solana RPC, manually parse binary data from specific accounts, and display a structured state. Rust",
+    "source": "chapters/tech_08_capstones_en"
+  },
+  {
+    "id": "tech_08_capstones_en_chunk_2",
+    "text": "Ownership Borsh Deserialization RPC Integration Expected deliverables Rust source code (Crates.io standard) Error Handling (Result/Option) Zero `unwrap()` in production Technical documentation (Cargo doc) Level 2 Full Stack DeFi dApp Design and deployment of a complete decentralized protocol (e.g., Crowdfunding with Escrow, or Voting DAO). The project must include the Smart Contract (Anchor), unit tests, and a connected React user interface. Anchor Framework CPI (Composability) PDA Management",
+    "source": "chapters/tech_08_capstones_en"
+  },
+  {
+    "id": "tech_08_capstones_en_chunk_3",
+    "text": "Expected deliverables Deployed Program (Devnet) TS Tests (> 80% coverage) Functional Frontend (Wallet Adapter) Public IDL Level 3 Technical Audit Report Simulation of a \"Red Teaming\" mission. The student must analyze an existing (or provided) protocol, identify potential attack vectors, and produce a professional report. Exploit Writing Vulnerability Assessment Gas Optimization Expected deliverables Industry Standard PDF Report Classification (High/Med/Low) PoC (Proof of Concept) of exploits Fix",
+    "source": "chapters/tech_08_capstones_en"
+  },
+  {
+    "id": "tech_08_capstones_en_chunk_4",
+    "text": "Recommendations",
+    "source": "chapters/tech_08_capstones_en"
+  },
+  {
+    "id": "tech_09_competencies_chunk_1",
+    "text": "Comp\u00e9tences Matrice de comp\u00e9tences & preuves Grille de v\u00e9rit\u00e9 reliant comp\u00e9tences cl\u00e9s, badges et preuves v\u00e9rifiables. Chaque item doit \u00eatre d\u00e9montrable par un livrable concret. Matrice Comp\u00e9tence cl\u00e9 Badge Preuve (livrable) Crit\u00e8re de validation Algorithmes Algo Ninja Profil coding challenge Rang avanc\u00e9 ou \u00e9quivalent. Rust Systems Rust Ace Repo Capstone 1 (CLI Tool) Gestion m\u00e9moire clean (0 unwrap), RPC OK. Smart Contracts Protocol Architect Repo Capstone 2 (Programme) Tests > 90% coverage,",
+    "source": "chapters/tech_09_competencies"
+  },
+  {
+    "id": "tech_09_competencies_chunk_2",
+    "text": "bonnes pratiques Anchor. Frontend Web3 dApp Builder Repo Capstone 2 (React UI) Connexion wallet, gestion erreurs RPC, UX fluide. S\u00e9curit\u00e9 & Audit Whitehat Jr Rapport d\u2019audit (Capstone 3) Threat model + vuln\u00e9rabilit\u00e9 critique identifi\u00e9e. Delivery & CI/CD DevOps Ready Logs GitHub Actions Build vert + d\u00e9ploiement auto Devnet. Communication Squad Lead Vid\u00e9o Demo Day Pitch 3 min clair, slides pro.",
+    "source": "chapters/tech_09_competencies"
+  },
+  {
+    "id": "tech_09_competencies_en_chunk_1",
+    "text": "Skills Competency matrix & evidence Truth grid linking key skills, badges, and verifiable evidence. Every item must be demonstrated by a concrete deliverable. Matrix Key competency Badge Evidence (deliverable) Validation criteria Algorithms Algo Ninja Coding challenge profile Advanced rank or equivalent. Rust Systems Rust Ace Capstone 1 Repo (CLI Tool) Clean memory management (0 unwrap), successful RPC interaction. Smart Contracts Protocol Architect Capstone 2 Repo (Program) Tests > 90%",
+    "source": "chapters/tech_09_competencies_en"
+  },
+  {
+    "id": "tech_09_competencies_en_chunk_2",
+    "text": "coverage, Anchor best practices. Frontend Web3 dApp Builder Capstone 2 Repo (React UI) Wallet connection, RPC error handling, smooth UX. Security & Audit Whitehat Jr Audit Report (Capstone 3) Threat model + critical vulnerability identified. Delivery & CI/CD DevOps Ready GitHub Actions Logs Green build + auto deployment to Devnet. Communication Squad Lead Demo Day Video Clear 3-min pitch, pro slides.",
+    "source": "chapters/tech_09_competencies_en"
+  },
+  {
+    "id": "tech_10_mentor_guide_chunk_1",
+    "text": "Mentors Guide du mentor Posture \"Tech Lead\" : accompagnement actif, p\u00e9dagogie socratique, contr\u00f4le qualit\u00e9 continu et ritualisation des feedbacks. Programme \"Mentor-in-a-Box\" Captation syst\u00e9matique Masterclass et code reviews enregistr\u00e9es, index\u00e9es, tagu\u00e9es. Knowledge base Micro-capsules, fiches anti-patterns, exemples guid\u00e9s. Playbooks rem\u00e9diation Packs pr\u00eats \u00e0 l\u2019emploi pour difficult\u00e9s r\u00e9currentes. Contr\u00f4le qualit\u00e9 Audit trimestriel des sessions critiques + feedback pair. Pipeline",
+    "source": "chapters/tech_10_mentor_guide"
+  },
+  {
+    "id": "tech_10_mentor_guide_chunk_2",
+    "text": "Train-the-Trainer 1 Sourcing Top alumni ou experts externes. 2 Shadowing 3 mois avec un senior, extraction des takeaways. 3 Certification M\u00e9thode socratique, anti-burnout, anti-triche IA. 4 Titularisation Squad d\u00e9di\u00e9e, production de contenu et rituels. Posture & rituels Attentes cl\u00e9s P\u00e9dagogie active Questions guid\u00e9es, jamais de solution toute faite. Qualit\u00e9 & tra\u00e7abilit\u00e9 Notes de session, enregistrements, feedbacks actionnables. S\u00e9curit\u00e9 & \u00e9thique Rappel des r\u00e8gles anti-plagiat IA et bonnes",
+    "source": "chapters/tech_10_mentor_guide"
+  },
+  {
+    "id": "tech_10_mentor_guide_chunk_3",
+    "text": "pratiques. Plan continuit\u00e9 Bin\u00f4mes rotatifs Deux mentors minimum par module critique. Teacher's notes Points de friction, solutions types, Q&A r\u00e9currents. Guest lecturers Pool d\u2019experts activables en renfort.",
+    "source": "chapters/tech_10_mentor_guide"
+  },
+  {
+    "id": "tech_10_mentor_guide_en_chunk_1",
+    "text": "Mentors Mentor Guide \u201cTech Lead\u201d posture: active support, Socratic teaching, continuous quality control, and ritualized feedback. \u201cMentor-in-a-Box\u201d program Systematic capture Masterclasses and code reviews recorded, indexed, tagged. Knowledge base Micro-capsules, anti-pattern sheets, guided examples. Remediation playbooks Ready-to-use packs for recurring difficulties. Quality control Quarterly audit of critical sessions + peer feedback. Train-the-Trainer pipeline 1 Sourcing Top alumni or",
+    "source": "chapters/tech_10_mentor_guide_en"
+  },
+  {
+    "id": "tech_10_mentor_guide_en_chunk_2",
+    "text": "external experts. 2 Shadowing 3 months with a senior, extract takeaways. 3 Certification Socratic method, anti-burnout, AI anti-cheat. 4 Tenure Dedicated squad, content production, rituals. Posture & rituals Key expectations Active pedagogy Guided questions, never spoon-feeding. Quality & traceability Session notes, recordings, actionable feedback. Security & ethics Remind anti-plagiarism rules and best practices. Continuity plan Rotating pairs Minimum two mentors per critical module. Teacher's",
+    "source": "chapters/tech_10_mentor_guide_en"
+  },
+  {
+    "id": "tech_10_mentor_guide_en_chunk_3",
+    "text": "notes Friction points, standard fixes, recurrent Q&A. Guest lecturers Pool of experts on-call for reinforcement.",
+    "source": "chapters/tech_10_mentor_guide_en"
+  }
+]

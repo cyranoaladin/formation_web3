@@ -1,0 +1,17 @@
+{
+  "name": "security-02-unverified-pda",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.28.0",
+    "bn.js": "^5.2.1",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "@types/chai": "^4.3.10",
+    "@types/mocha": "^10.0.6"
+  }
+}

@@ -1,162 +1,161 @@
-import React, { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import TerminalLayout from "./components/Layout/TerminalLayout.jsx";
+import Console from "./components/Terminal/Console.jsx";
+import MissionCard from "./components/Dashboard/MissionCard.jsx";
+import CodeUploader from "./components/Editor/CodeUploader.jsx";
+import { fetchLabs } from "./services/api.js";
 
-const API_BASE = (import.meta.env.VITE_API_BASE ?? "http://localhost:8000").replace(/\/+$/, "");
+import MentorDashboard from "./components/Mentor/MentorDashboard.jsx";
 
-async function apiGet(path) {
-  const r = await fetch(`${API_BASE}${path}`, { method: "GET" });
-  const text = await r.text();
-  if (!r.ok) throw new Error(`GET ${path} -> ${r.status} ${text}`);
-  return JSON.parse(text);
-}
+const MODES = {
+  BOOT: "BOOT",
+  DASHBOARD: "DASHBOARD",
+  LAB: "LAB",
+  MENTOR: "MENTOR"
+};
 
-async function apiUploadZip({ student_id, lab_id, file }) {
-  const fd = new FormData();
-  fd.append("student_id", student_id);
-  fd.append("lab_id", lab_id);
-  fd.append("file", file);
-  const r = await fetch(`${API_BASE}/submissions/upload_zip`, { method: "POST", body: fd });
-  const text = await r.text();
-  if (!r.ok) throw new Error(`UPLOAD -> ${r.status} ${text}`);
-  return JSON.parse(text);
-}
+const statusMap = {
+  "security-01-missing-owner": "completed",
+  "security-02-unverified-pda": "active",
+  "security-03-signer-authorization": "locked",
+};
 
-function prettyJson(obj) {
-  try {
-    return JSON.stringify(obj, null, 2);
-  } catch {
-    return String(obj);
-  }
-}
+const fallbackLabs = [
+  {
+    id: "security-01-missing-owner",
+    title: "Security N1: Missing Owner Check",
+    difficulty: "N1",
+  },
+  {
+    id: "security-02-unverified-pda",
+    title: "Security N1: Unverified PDA",
+    difficulty: "N1",
+  },
+  {
+    id: "security-03-signer-authorization",
+    title: "Security N1: Signer vs Authority",
+    difficulty: "N1",
+  },
+];
 
 export default function App() {
-  const [studentId, setStudentId] = useState("stu_ui");
-  const [labId, setLabId] = useState("lab_demo");
-  const [file, setFile] = useState(null);
+  const [mode, setMode] = useState(MODES.BOOT);
+  const [labs, setLabs] = useState(fallbackLabs);
+  const [selectedLab, setSelectedLab] = useState(fallbackLabs[1]);
 
-  const [submissionId, setSubmissionId] = useState("");
-  const [runId, setRunId] = useState("");
+  useEffect(() => {
+    const loadLabs = async () => {
+      try {
+        const res = await fetchLabs();
+        const apiLabs = (res.labs || []).map((lab) => ({
+          id: lab.lab_id,
+          title: lab.title,
+          difficulty: "N1",
+        }));
+        if (apiLabs.length) {
+          setLabs(apiLabs);
+          setSelectedLab(apiLabs[1] || apiLabs[0]);
+        }
+      } catch {
+        setLabs(fallbackLabs);
+      }
+    };
+    loadLabs();
+  }, []);
 
-  const [busy, setBusy] = useState(false);
-  const [out, setOut] = useState("");
+  const statusPulse = useMemo(
+    () => ["SOL-LOCAL", "CPU: 42%", "SYNC: OK", "ZK: ARMING"],
+    []
+  );
 
-  const canUpload = useMemo(() => Boolean(studentId && labId && file), [studentId, labId, file]);
+  const labsWithStatus = labs.map((lab) => ({
+    ...lab,
+    status: statusMap[lab.id] || "active",
+  }));
 
-  async function onHealth() {
-    setBusy(true);
-    setOut("");
-    try {
-      const j = await apiGet("/health");
-      setOut(prettyJson(j));
-    } catch (e) {
-      setOut(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const renderMain = () => {
+    if (mode === MODES.BOOT) {
+      return (
+        <div className="boot-screen">
+          <div className="boot-title">Zyno Terminal</div>
+          <div className="boot-sub">Initializing MFAI Secure Ops...</div>
+          <button className="boot-cta" onClick={() => setMode(MODES.DASHBOARD)}>
+            Enter Mission Grid
+          </button>
 
-  async function onUpload() {
-    setBusy(true);
-    setOut("");
-    try {
-      const j = await apiUploadZip({ student_id: studentId, lab_id: labId, file });
-      setSubmissionId(j.submission_id || "");
-      setOut(prettyJson(j));
-    } catch (e) {
-      setOut(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onFetchSubmission() {
-    if (!submissionId) return;
-    setBusy(true);
-    setOut("");
-    try {
-      const j = await apiGet(`/submissions/${submissionId}`);
-      setRunId(j.latest_run_id || "");
-      setOut(prettyJson(j));
-    } catch (e) {
-      setOut(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onFetchRun() {
-    if (!runId) return;
-    setBusy(true);
-    setOut("");
-    try {
-      const j = await apiGet(`/runs/${runId}`);
-      setOut(prettyJson(j));
-    } catch (e) {
-      setOut(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-
-  async function onLabs() {
-    setBusy(true);
-    setOut("");
-    try {
-      const j = await apiGet("/labs");
-      setOut(prettyJson(j));
-    } catch (e) {
-      setOut(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div style={{ fontFamily: "ui-sans-serif, system-ui", padding: 16, maxWidth: 960, margin: "0 auto" }}>
-      <h1 style={{ margin: "8px 0 4px" }}>RBK Labs</h1>
-      <div style={{ opacity: 0.8, marginBottom: 16 }}>Upload ZIP → Worker run → Proof bundle (needs_review)</div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>API</div>
-          <button disabled={busy} onClick={onHealth} style={{ padding: "8px 10px" }}>Health</button>
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.8 }}>API_BASE: {API_BASE}</div>
-        </div>
-
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8 }}>Upload submission (.zip)</div>
-          <div style={{ display: "grid", gap: 8 }}>
-            <label style={{ display: "grid", gap: 4 }}>
-              <span>student_id</span>
-              <input value={studentId} onChange={(e) => setStudentId(e.target.value)} style={{ padding: 8 }} />
-            </label>
-            <label style={{ display: "grid", gap: 4 }}>
-              <span>lab_id</span>
-              <input value={labId} onChange={(e) => setLabId(e.target.value)} style={{ padding: 8 }} />
-            </label>
-            <label style={{ display: "grid", gap: 4 }}>
-              <span>zip file</span>
-              <input type="file" accept=".zip" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            </label>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button disabled={!canUpload || busy} onClick={onUpload} style={{ padding: "8px 10px" }}>Upload</button>
-              <button disabled={!submissionId || busy} onClick={onFetchSubmission} style={{ padding: "8px 10px" }}>Get submission</button>
-              <button disabled={!runId || busy} onClick={onFetchRun} style={{ padding: "8px 10px" }}>Get run</button>
-            </div>
-
-            <div style={{ fontSize: 12, opacity: 0.85 }}>
-              submission_id: <b>{submissionId || "-"}</b><br />
-              latest_run_id: <b>{runId || "-"}</b>
-            </div>
+          <div style={{ marginTop: "2rem", opacity: 0.3 }}>
+            <button onClick={() => setMode(MODES.MENTOR)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: "0.8rem", textDecoration: "underline" }}>
+              [MENTOR ACCESS]
+            </button>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Output</div>
-        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{out}</pre>
+    if (mode === MODES.MENTOR) {
+      return <MentorDashboard onBack={() => setMode(MODES.BOOT)} />;
+    }
+
+    if (mode === MODES.DASHBOARD) {
+      return (
+        <div className="dashboard">
+          <div className="dashboard-header">
+            <div className="eyebrow">Mission Grid</div>
+            <div className="dashboard-title">Security N1 Track</div>
+            <p className="dashboard-copy">
+              Select a mission to initialize. Active mission syncs with the
+              Zyno console.
+            </p>
+          </div>
+          <div className="mission-grid">
+            {labsWithStatus.map((lab) => (
+              <MissionCard
+                key={lab.id}
+                lab={lab}
+                onSelect={() => {
+                  setSelectedLab(lab);
+                  if (lab.status !== "locked") {
+                    setMode(MODES.LAB);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="lab-view">
+        <div className="lab-header">
+          <div className="eyebrow">Active Mission</div>
+          <div className="lab-title">{selectedLab.title}</div>
+          <div className="lab-meta">Status: {selectedLab.status}</div>
+        </div>
+        <div className="lab-content">
+          <Console
+            title="Zyno :: Mission Console"
+            lines={[
+              "Bootstrapping secure channel...",
+              "Analyzing lab context...",
+              "Awaiting student patch submission.",
+            ]}
+            contextLabId={selectedLab.id}
+          />
+          <CodeUploader labId={selectedLab.id} />
+        </div>
       </div>
-    </div>
+    );
+  };
+
+  return (
+    <TerminalLayout
+      mode={mode}
+      statusPulse={statusPulse}
+      onBack={() => setMode(MODES.DASHBOARD)}
+    >
+      {renderMain()}
+    </TerminalLayout>
   );
 }
+

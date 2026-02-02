@@ -67,33 +67,112 @@ def build_proof_artifacts(upload_path: str) -> dict:
         "files": files,
     }
 
-RUNNER_BIN = ["python", "/repo/runner/minimal.py"]
 
+# Environment variables for Runner config
+RUNNER_BACKEND = os.getenv("RUNNER_BACKEND", "subprocess")  # "docker" or "subprocess"
+HOST_PWD = os.getenv("HOST_PWD", os.getcwd())  # For Docker volume mounts
+RBK_ENV = os.getenv("RBK_ENV", "dev")
 
-def _run_runner(lab_id: str, submission_id: str, upload_path: str) -> dict:
-    import json, os
-    # Prefer zip next to extract dir if present
+def _run_runner(lab_id: str, submission_id: str, upload_path: str, run_id: str) -> dict:
+    import json, os, subprocess
+    
+    # Paths definition
     zip_path = upload_path + ".zip"
     sandbox = f"/tmp/rbk_runner/{submission_id}"
-    cmd = RUNNER_BIN + ["--lab-id", lab_id, "--submission-id", submission_id, "--zip", zip_path, "--sandbox", sandbox]
+    
+    logs = ""
+    result = {}
+    
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True)
-        # Load artifacts from runner out dir
-        out_dir = os.path.join(sandbox, "out")
-        logs_fp = os.path.join(out_dir, "logs.txt")
-        res_fp = os.path.join(out_dir, "result.json")
-        logs = open(logs_fp, 'r', encoding='utf-8').read() if os.path.exists(logs_fp) else proc.stdout
-        result = {}
-        if os.path.exists(res_fp):
+        if RUNNER_BACKEND == "docker":
+            # --- DOCKER EXECUTION (SECURED) ---
+            print(f"[worker] running in DOCKER mode for {submission_id}", flush=True)
+            
+            # Pre-create sandbox dir on host (worker) so it exists for binding
+            os.makedirs(sandbox, exist_ok=True)
+            os.makedirs(os.path.join(sandbox, "out"), exist_ok=True)
+            os.makedirs(os.path.join(sandbox, "work"), exist_ok=True)
+            
+            # Strategy: Use 'docker cp' to avoid binding mounting issues with named volumes
+            # This is more robust for DooD setups where paths might mismatch.
+            
+            c_name = f"rbk_run_{run_id}"
+            
+            # 1. Create container (Created state)
+            # We assume 'rbk-runner:latest' is built and available (runner-base service)
+            # We mount the repo code read-only (using HOST_PWD provided by docker-compose)
+            # We assume HOST_PWD points to the repo root on the HOST.
+            subprocess.run([
+                "docker", "create", 
+                "--name", c_name,
+                "--network", "none",
+                "--cpus", "1.0",
+                "--memory", "512m",
+                "-v", f"{HOST_PWD}:/repo:ro",
+                "rbk-runner:latest", 
+                "python", "/repo/runner/minimal.py",
+                "--lab-id", lab_id,
+                "--submission-id", submission_id,
+                "--run-id", run_id,
+                "--zip", "/tmp/input.zip", 
+                "--sandbox", "/tmp/sandbox"
+            ], check=True, capture_output=True)
+            
             try:
-                result = json.load(open(res_fp, 'r', encoding='utf-8'))
-            except Exception:
-                result = {"status": "failed", "error": "invalid result.json"}
+                # 2. Copy Zip to container
+                subprocess.run(["docker", "cp", zip_path, f"{c_name}:/tmp/input.zip"], check=True, capture_output=True)
+                
+                # 3. Start container and wait for completion
+                proc = subprocess.run(["docker", "start", "-a", c_name], capture_output=True, text=True)
+                logs = proc.stdout + "\n" + proc.stderr
+                
+                # 4. Copy Results back from container
+                def read_cont_file(path_in_c):
+                    local_dst = os.path.join(sandbox, os.path.basename(path_in_c))
+                    # docker cp will fail if file doesn't exist, ignore error
+                    subprocess.run(["docker", "cp", f"{c_name}:{path_in_c}", local_dst], capture_output=True)
+                    if os.path.exists(local_dst):
+                        return open(local_dst, "r", encoding="utf-8", errors="replace").read()
+                    return None
+
+                res_json_str = read_cont_file("/tmp/sandbox/out/result.json")
+                if res_json_str:
+                    try:
+                        result = json.loads(res_json_str)
+                    except Exception:
+                        pass
+                        
+                logs_file_content = read_cont_file("/tmp/sandbox/out/logs.txt")
+                if logs_file_content:
+                    logs = logs_file_content
+                    
+            finally:
+                # 5. Cleanup container
+                subprocess.run(["docker", "rm", "-f", c_name], capture_output=True)
+                
         else:
-            result = {"status": "failed", "error": "missing result.json"}
+            # --- SUBPROCESS EXECUTION (LEGACY/DEV) ---
+            RUNNER_BIN = ["python", "/repo/runner/minimal.py"]
+            cmd = RUNNER_BIN + ["--lab-id", lab_id, "--submission-id", submission_id, "--run-id", run_id, "--zip", zip_path, "--sandbox", sandbox]
+            proc = subprocess.run(cmd, capture_output=True, text=True)
+            out_dir = os.path.join(sandbox, "out")
+            logs_fp = os.path.join(out_dir, "logs.txt")
+            res_fp = os.path.join(out_dir, "result.json")
+            logs = open(logs_fp, 'r', encoding='utf-8').read() if os.path.exists(logs_fp) else proc.stdout
+            if os.path.exists(res_fp):
+                try:
+                    result = json.load(open(res_fp, 'r', encoding='utf-8'))
+                except Exception:
+                    result = {"status": "failed", "error": "invalid result.json"}
+            else:
+                result = {"status": "failed", "error": "missing result.json"}
+                
         return {"logs": logs, "result": result}
+        
     except Exception as e:
         return {"logs": f"[runner error] {e}", "result": {"status": "failed", "error": str(e)}}
+
+
 
 
 def main():
@@ -128,6 +207,8 @@ def main():
         proof_id = gen_id("proof")
 
         print(f"[worker] claimed submission_id={submission_id} upload_path={upload_path}", flush=True)
+        # Allow external polling to observe the running state
+        time.sleep(1.0)
 
         try:
             # Build run document
@@ -159,10 +240,10 @@ def main():
             arts = build_proof_artifacts(upload_path)
 
             # runner integration for hello-proof: override logs and result from sandbox
-            arts_result = "{}"
+            arts_result_raw = "{}"
             files_count_calc = len(arts.get("files", []))
             if is_hello:
-                ro = _run_runner(lab_id, submission_id, upload_path)
+                ro = _run_runner(lab_id, submission_id, upload_path, run_id)
                 
                 runner_logs = ""
                 runner_result_str = "{}"
@@ -197,7 +278,7 @@ def main():
 
                 # 4. Assign outputs
                 arts['logs'] = runner_logs if runner_logs else "[worker] no runner logs captured"
-                arts_result = runner_result_str
+                arts_result_raw = runner_result_str
                 
                 # 5. Derive decision from result (parsing it back)
                 try:
@@ -232,7 +313,13 @@ def main():
                 "finished_at": iso_now()
             }
             import json as _json
-            arts_result = arts_result
+            if not is_hello:
+                arts_result_raw = _json.dumps(result_obj, ensure_ascii=False)
+
+            try:
+                arts_result = _json.loads(arts_result_raw) if arts_result_raw else result_obj
+            except Exception:
+                arts_result = {"status": "failed", "error": "invalid result.json"}
 
             # Build proof bundle
             proof_doc = {

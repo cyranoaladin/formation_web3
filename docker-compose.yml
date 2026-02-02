@@ -3,6 +3,8 @@ services:
     image: mongo:7
     container_name: rbk-mongo
     restart: unless-stopped
+    ports:
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
       - ./:/repo:ro
@@ -22,6 +24,9 @@ services:
       RBK_ENV: dev
     ports:
       - "8000:8000"
+    volumes:
+      - ./:/repo:ro
+      - uploads:/tmp/rbk_uploads
     restart: unless-stopped
 
   worker:
@@ -42,7 +47,19 @@ services:
       RBK_ENV: dev
       RBK_API_BASE_URL: http://api:8000
       WORKSPACE_ROOT: /tmp/rbk_workspaces
+      HOST_PWD: ${PWD}
+      RUNNER_BACKEND: docker
+    volumes:
+      - ./:/repo:ro
+      - uploads:/tmp/rbk_uploads
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
+
+  runner-base:
+    build:
+      context: ./runner
+    image: rbk-runner:latest
+    profiles: [ "tools" ]
 
   ui:
     image: node:22
@@ -62,3 +79,4 @@ services:
 volumes:
   mongo_data:
   ui_node_modules:
+  uploads:

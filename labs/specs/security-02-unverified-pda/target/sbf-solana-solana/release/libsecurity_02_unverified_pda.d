@@ -1,0 +1,1 @@
+/home/alaeddine/Documents/formation_web3/labs/specs/security-02-unverified-pda/target/sbf-solana-solana/release/libsecurity_02_unverified_pda.rlib: /home/alaeddine/Documents/formation_web3/labs/specs/security-02-unverified-pda/programs/security_02_unverified_pda/src/lib.rs

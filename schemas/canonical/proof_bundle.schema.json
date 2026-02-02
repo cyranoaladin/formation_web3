@@ -33,7 +33,28 @@
       "format": "date-time"
     },
     "artifacts": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "logs": { "type": "string" },
+        "tests": { "type": "string" },
+        "diff": { "type": "string" },
+        "audit": { "type": "string" },
+        "result": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["status", "lab_id", "submission_id", "run_id", "started_at", "finished_at"],
+          "properties": {
+            "status": { "type": "string", "enum": ["ok", "failed"] },
+            "lab_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "submission_id": { "type": "string", "pattern": "^sub_[a-f0-9]{32}$" },
+            "run_id": { "type": "string", "pattern": "^run_[a-f0-9]{16}$" },
+            "started_at": { "type": "string", "format": "date-time" },
+            "finished_at": { "type": "string", "format": "date-time" },
+            "error": { "type": "string" }
+          }
+        }
+      }
     },
     "score": {
       "type": "object",

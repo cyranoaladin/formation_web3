@@ -2,47 +2,38 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ main ]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ "main", "master" ]
 
 jobs:
-  smoke:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Show Docker versions
-        run: |
-          docker --version
-          docker compose version
-
-      - name: Build and start services (mongo, api, worker)
-        run: docker compose up -d --build mongo api worker
-
-      - name: Wait for API health
-        run: |
-          for i in $(seq 1 90); do
-            if curl -sSf http://localhost:8000/health >/dev/null; then echo READY; break; fi
-            sleep 1
-          done
-          curl -sS http://localhost:8000/health
-
-      - name: Run E2E smoke (Step 048)
-        run: ./tools/run.sh tools/steps/048_e2e_smoke_upload_to_proof.sh
-
-      - name: Compose logs on failure
-        if: failure()
-        run: docker compose logs --tail=300 || true
-
-      - name: Tear down
-        if: always()
-        run: docker compose down -v
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        
+    - name: Lint with Ruff
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        ruff check . --select=E9,F63,F7,F82 --target-version=py312
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        ruff check . --exit-zero --statistics
+        
+    - name: Test with pytest
+      run: |
+        export PYTHONPATH=api
+        pytest tests/

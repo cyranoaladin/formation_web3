@@ -21,3 +21,17 @@ build/
 
 # Ignore editor/program backup artifacts
 *.bak.*
+*.swp
+.DS_Store
+
+# Agent artifacts
+.antigravity/
+.gemini/
+.venv*/
+
+# Misc
+*.log
+coverage.xml
+.coverage
+htmlcov/
+

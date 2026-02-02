@@ -1,0 +1,11 @@
+[workspace]
+members = ["programs/*"]
+
+[profile.release]
+overflow-checks = true
+
+[patch.crates-io]
+constant_time_eq = { path = "./third_party/constant_time_eq" }
+wit-bindgen = { path = "./third_party/wit-bindgen" }
+getrandom = { path = "./third_party/getrandom" }
+ahash = { path = "./third_party/ahash-0.8.12/ahash-0.8.12" }

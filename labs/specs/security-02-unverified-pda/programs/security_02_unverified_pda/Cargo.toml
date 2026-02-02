@@ -1,0 +1,16 @@
+[package]
+name = "security_02_unverified_pda"
+version = "0.1.0"
+description = "Security N1 lab: Unverified PDA"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+
+[dependencies]
+anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }

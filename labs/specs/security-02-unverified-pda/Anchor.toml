@@ -1,0 +1,12 @@
+[programs.localnet]
+security_02_unverified_pda = "5ST4AajQCmR2YKurdqDM1BWwAZJRc98JbfzyHCA3i1Ak"
+
+[provider]
+cluster = "localnet"
+wallet = "./.anchor/wallet.json"
+
+[scripts]
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 5000
