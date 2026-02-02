@@ -6,6 +6,7 @@ pydantic-settings==2.7.1
 pymongo==4.10.1
 python-multipart==0.0.20
 jsonschema>=4.21.0,<5
+prometheus-fastapi-instrumentator==7.0.0
 
 # Worker dependencies
 python-dotenv==1.0.1
